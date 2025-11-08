@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyDM - Download Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 500px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-icon {
+            font-size: 20px;
+        }
+
+        .status-badge {
+            background: rgba(255, 255, 255, 0.3);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .container {
+            padding: 0;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            margin-bottom: 8px;
+        }
+
+        .download-item {
+            background: white;
+            border-bottom: 1px solid #eee;
+            padding: 15px 20px;
+            transition: background 0.2s;
+        }
+
+        .download-item:hover {
+            background: #f9f9f9;
+        }
+
+        .download-item.complete {
+            background: #f0f9ff;
+        }
+
+        .download-item.error {
+            background: #fef2f2;
+        }
+
+        .download-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .download-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            flex: 1;
+            word-break: break-word;
+            margin-right: 10px;
+        }
+
+        .download-status {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: 500;
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
+
+        .download-status.downloading {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .download-status.complete {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .download-status.paused {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .download-status.error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .download-info {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .download-info-item {
+            display: flex;
+            gap: 4px;
+        }
+
+        .progress-container {
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            font-size: 11px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .download-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .btn-pause {
+            background: #fff3e0;
+            color: #f57c00;
+            border: 1px solid #ffe0b2;
+        }
+
+        .btn-pause:hover {
+            background: #ffe0b2;
+        }
+
+        .btn-resume {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+
+        .btn-resume:hover {
+            background: #bbdefb;
+        }
+
+        .btn-cancel {
+            background: #ffebee;
+            color: #d32f2f;
+            border: 1px solid #ffcdd2;
+        }
+
+        .btn-cancel:hover {
+            background: #ffcdd2;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .footer {
+            background: #f5f5f5;
+            padding: 12px 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            font-size: 12px;
+            margin-top: 8px;
+            padding: 8px;
+            background: #ffebee;
+            border-left: 3px solid #d32f2f;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <span class="header-icon">📥</span>
+            <span>MyDM</span>
+        </h1>
+        <span class="status-badge" id="statusBadge">Loading...</span>
+    </div>
+
+    <div class="container" id="downloadsContainer">
+        <div class="empty-state">
+            <div class="empty-state-icon">📁</div>
+            <p>No active downloads</p>
+            <p style="font-size: 12px;">Right-click any file to download with MyDM</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        Last updated: <span id="lastUpdated">Just now</span>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
