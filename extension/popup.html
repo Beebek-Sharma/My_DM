@@ -271,7 +271,21 @@
             <span class="header-icon">📥</span>
             <span>MyDM</span>
         </h1>
-        <span class="status-badge" id="statusBadge">Loading...</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <button id="btnClearCompleted" class="btn" style="flex:none;background:#eef7ee;color:#2e7d32;border:1px solid #c8e6c9;padding:4px 10px;">Clear Completed</button>
+            <button id="btnClearAll" class="btn" style="flex:none;background:#ffebee;color:#c62828;border:1px solid #ffcdd2;padding:4px 10px;">Clear All</button>
+            <span class="status-badge" id="statusBadge">Loading...</span>
+        </div>
+    </div>
+
+    <div style="padding: 12px 15px; background: #f5f5f5; border-bottom: 1px solid #ddd;">
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <input type="text" id="linkInput" placeholder="Paste link here..." style="flex: 1; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+            <button id="btnDownload" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 12px;">Download</button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button id="btnPaste" style="flex: 1; padding: 6px 10px; background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;">📋 Paste from Clipboard</button>
+        </div>
     </div>
 
     <div class="container" id="downloadsContainer">

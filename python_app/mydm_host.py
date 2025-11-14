@@ -16,7 +16,7 @@ from pathlib import Path
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from downloader import DownloadManager
+from downloader import DownloadManager, StreamingDownloadManager
 
 
 class NativeMessagingHost:
@@ -27,12 +27,18 @@ class NativeMessagingHost:
         # Use user's Downloads folder by default
         downloads_dir = str(Path.home() / 'Downloads')
         
-        # Create download manager
+        # Create download managers
         self.download_manager = DownloadManager(
             download_dir=downloads_dir,
             num_threads=8
         )
+        self.streaming_manager = StreamingDownloadManager(
+            download_dir=downloads_dir
+        )
 
+        # Track active downloads
+        self.active_downloads = {}  # Maps download_id to manager type
+        
         # Track message queue for threading
         self.running = True
 
@@ -143,26 +149,31 @@ class NativeMessagingHost:
         self.log(f"Error: {error_message}")
 
     def handle_download_command(self, message):
-        """
-        Handle download command from extension
-        
-        Args:
-            message: Message with 'url' and optional 'referer' fields
-        """
         url = message.get('url')
         referer = message.get('referer')
 
         if not url:
-            self.send_message({
-                'event': 'error',
-                'error': 'No URL provided'
-            })
+            self.send_message({'event': 'error', 'error': 'No URL provided'})
             return
 
         try:
             self.log(f"Starting download: {url}")
 
-            # Start download
+            # Detect streaming sites and route to yt-dlp
+            if StreamingDownloadManager.is_streaming_site(url):
+                self.log("Detected streaming site - using yt-dlp")
+                download_id = self.streaming_manager.download(
+                    url=url,
+                    on_progress=self.on_progress,
+                    on_complete=self.on_complete,
+                    on_error=self.on_error
+                )
+                if download_id:
+                    self.active_downloads[download_id] = 'streaming'
+                    self.send_message({'event': 'started', 'id': download_id})
+                return
+
+            # Otherwise use regular segmented downloader
             download_id = self.download_manager.start_download(
                 url=url,
                 referer=referer,
@@ -170,19 +181,12 @@ class NativeMessagingHost:
                 on_complete=self.on_complete,
                 on_error=self.on_error
             )
-
-            # Send acknowledgment
-            self.send_message({
-                'event': 'started',
-                'id': download_id
-            })
-
+            if download_id:
+                self.active_downloads[download_id] = 'standard'
+                self.send_message({'event': 'started', 'id': download_id})
         except Exception as e:
-            self.log(f"Failed to start download: {str(e)}")
-            self.send_message({
-                'event': 'error',
-                'error': str(e)
-            })
+            self.log(f"Failed: {str(e)}")
+            self.send_message({'event': 'error', 'error': str(e)})
 
     def handle_pause_command(self, message):
         """Handle pause command"""

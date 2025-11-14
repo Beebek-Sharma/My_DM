@@ -1,7 +1,6 @@
-// MyDM Popup Script
+// MyDM Popup Script - Complete Rewrite
 // Manages the popup UI and communication with background service worker
 
-// Track downloads and their UI state
 let downloads = new Map();
 let lastUpdateTime = new Date();
 
@@ -9,6 +8,19 @@ let lastUpdateTime = new Date();
 document.addEventListener('DOMContentLoaded', () => {
   loadDownloads();
   startAutoRefresh();
+  
+  // Attach event listeners to header buttons
+  document.getElementById('btnClearCompleted').addEventListener('click', clearCompleted);
+  document.getElementById('btnClearAll').addEventListener('click', clearAll);
+  document.getElementById('btnDownload').addEventListener('click', downloadFromInput);
+  document.getElementById('btnPaste').addEventListener('click', pasteFromClipboard);
+  
+  // Allow Enter key to trigger download
+  document.getElementById('linkInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      downloadFromInput();
+    }
+  });
 });
 
 // Load downloads from chrome storage
@@ -49,6 +61,10 @@ function renderDownloads() {
   // Build HTML for all downloads
   let html = '';
   downloads.forEach((download) => {
+    // Safety checks for undefined properties
+    if (!download || !download.id) return; // Skip invalid downloads
+    
+    const filename = download.filename || 'Unknown file';
     const statusClass = download.status || 'downloading';
     const isActive = statusClass === 'downloading' || statusClass === 'paused';
 
@@ -64,33 +80,23 @@ function renderDownloads() {
     let actions = '';
     if (statusClass === 'downloading') {
       actions = `
-        <button class="btn btn-pause" data-id="${download.id}" onclick="pauseDownload('${download.id}')">
-          ⏸ Pause
-        </button>
-        <button class="btn btn-cancel" data-id="${download.id}" onclick="cancelDownload('${download.id}')">
-          ✕ Cancel
-        </button>
+        <button class="btn btn-pause" data-action="pause" data-id="${download.id}" type="button">⏸ Pause</button>
+        <button class="btn btn-cancel" data-action="cancel" data-id="${download.id}" type="button">✕ Cancel</button>
       `;
     } else if (statusClass === 'paused') {
       actions = `
-        <button class="btn btn-resume" data-id="${download.id}" onclick="resumeDownload('${download.id}')">
-          ▶ Resume
-        </button>
-        <button class="btn btn-cancel" data-id="${download.id}" onclick="cancelDownload('${download.id}')">
-          ✕ Cancel
-        </button>
+        <button class="btn btn-resume" data-action="resume" data-id="${download.id}" type="button">▶ Resume</button>
+        <button class="btn btn-cancel" data-action="cancel" data-id="${download.id}" type="button">✕ Cancel</button>
       `;
     } else if (statusClass === 'complete') {
       actions = `
-        <button class="btn" style="background: #e8f5e9; color: #388e3c; border: 1px solid #c8e6c9; cursor: default;" disabled>
-          ✓ Complete
-        </button>
+        <button class="btn" style="background: #e8f5e9; color: #388e3c; border: 1px solid #c8e6c9;" disabled type="button">✓ Complete</button>
+        <button class="btn" style="background:#f5f5f5;color:#555;border:1px solid #ddd;" data-action="remove" data-id="${download.id}" type="button">🗑 Remove</button>
       `;
     } else if (statusClass === 'error') {
       actions = `
-        <button class="btn" style="background: #ffebee; color: #d32f2f; border: 1px solid #ffcdd2; cursor: default;" disabled>
-          ✕ Error
-        </button>
+        <button class="btn" style="background: #ffebee; color: #d32f2f; border: 1px solid #ffcdd2;" disabled type="button">✕ Error</button>
+        <button class="btn" style="background:#f5f5f5;color:#555;border:1px solid #ddd;" data-action="remove" data-id="${download.id}" type="button">🗑 Remove</button>
       `;
     }
 
@@ -122,8 +128,8 @@ function renderDownloads() {
     html += `
       <div class="download-item ${statusClass}">
         <div class="download-header">
-          <div class="download-name" title="${download.filename}">
-            ${escapeHtml(download.filename)}
+          <div class="download-name" title="${filename}">
+            ${escapeHtml(filename)}
           </div>
           <span class="download-status ${statusClass}">
             ${statusClass}
@@ -142,6 +148,25 @@ function renderDownloads() {
 
   container.innerHTML = html;
   updateLastUpdated();
+  
+  // Attach event listeners to all action buttons
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    
+    const action = btn.dataset.action;
+    const downloadId = btn.dataset.id;
+    
+    if (action === 'pause') {
+      pauseDownload(downloadId);
+    } else if (action === 'resume') {
+      resumeDownload(downloadId);
+    } else if (action === 'cancel') {
+      cancelDownload(downloadId);
+    } else if (action === 'remove') {
+      removeDownload(downloadId);
+    }
+  });
 }
 
 // Pause a download
@@ -182,6 +207,34 @@ function cancelDownload(downloadId) {
   }
 }
 
+// Remove a download from list (works even if background/native host are inactive)
+function removeDownload(downloadId) {
+  chrome.storage.local.get('downloads', (result) => {
+    const list = (result.downloads || []).filter(d => d.id !== downloadId);
+    chrome.storage.local.set({ downloads: list }, () => {
+      loadDownloads();
+    });
+  });
+}
+
+function clearCompleted() {
+  chrome.storage.local.get('downloads', (result) => {
+    const list = (result.downloads || []).filter(d => !['complete', 'error', 'cancelled'].includes(d.status));
+    chrome.storage.local.set({ downloads: list }, () => {
+      loadDownloads();
+    });
+  });
+}
+
+function clearAll() {
+  if (confirm('Clear all items from the list?')) {
+    chrome.storage.local.set({ downloads: [] }, () => {
+      downloads.clear();
+      renderDownloads();
+    });
+  }
+}
+
 // Listen for updates from background service worker
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'updateDownload') {
@@ -199,11 +252,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Auto-refresh downloads every 500ms
+// Auto-refresh downloads every 1000ms (reduced from 500ms for performance)
 function startAutoRefresh() {
   setInterval(() => {
     loadDownloads();
-  }, 500);
+  }, 1000);
 }
 
 // Format bytes to human-readable format
@@ -244,4 +297,46 @@ function escapeHtml(text) {
     "'": '&#039;'
   };
   return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+// Download from input box
+function downloadFromInput() {
+  const url = document.getElementById('linkInput').value.trim();
+  
+  if (!url) {
+    alert('Please enter a URL');
+    return;
+  }
+  
+  // Validate URL
+  try {
+    new URL(url);
+  } catch (e) {
+    alert('Please enter a valid URL');
+    return;
+  }
+  
+  // Send download request to background
+  chrome.runtime.sendMessage({
+    action: 'downloadFromPopup',
+    url: url
+  }, (response) => {
+    if (response && response.status === 'started') {
+      document.getElementById('linkInput').value = ''; // Clear input
+      console.log('Download started from popup');
+    } else {
+      alert('Failed to start download');
+    }
+  });
+}
+
+// Paste from clipboard
+function pasteFromClipboard() {
+  navigator.clipboard.readText()
+    .then(text => {
+      document.getElementById('linkInput').value = text;
+    })
+    .catch(err => {
+      alert('Failed to read clipboard. Please paste manually.');
+    });
 }

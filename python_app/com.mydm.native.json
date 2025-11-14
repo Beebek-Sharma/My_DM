@@ -1,9 +1,9 @@
 {
   "name": "com.mydm.native",
   "description": "MyDM Python Native Host for Chrome Extension",
-  "path": "D:\\download extension\\MyDM\\python_app\\mydm_host.bat",
+  "path": "d:\\Projects\\MyDM\\python_app\\start_host.bat",
   "type": "stdio",
   "allowed_origins": [
-    "chrome-extension://lgfpaokidiaeceghdlcfkeglgdmkbhoa/"
+    "chrome-extension://ifpigkmpleapahobjccghammbkonocpn/"
   ]
 }
