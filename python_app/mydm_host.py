@@ -12,6 +12,7 @@ import struct
 import threading
 import time
 from pathlib import Path
+import hashlib
 
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -56,7 +57,7 @@ class NativeMessagingHost:
             if not length_bytes or len(length_bytes) != 4:
                 return None
 
-            message_length = struct.unpack('I', length_bytes)[0]
+            message_length = struct.unpack('<I', length_bytes)[0]
 
             # Read the message content
             message_data = sys.stdin.buffer.read(message_length)
@@ -82,7 +83,7 @@ class NativeMessagingHost:
         try:
             message_json = json.dumps(message)
             message_bytes = message_json.encode('utf-8')
-            message_length = struct.pack('I', len(message_bytes))
+            message_length = struct.pack('<I', len(message_bytes))
 
             # Write length + message
             sys.stdout.buffer.write(message_length)
@@ -162,15 +163,22 @@ class NativeMessagingHost:
             # Detect streaming sites and route to yt-dlp
             if StreamingDownloadManager.is_streaming_site(url):
                 self.log("Detected streaming site - using yt-dlp")
-                download_id = self.streaming_manager.download(
-                    url=url,
-                    on_progress=self.on_progress,
-                    on_complete=self.on_complete,
-                    on_error=self.on_error
-                )
-                if download_id:
-                    self.active_downloads[download_id] = 'streaming'
-                    self.send_message({'event': 'started', 'id': download_id})
+                download_id = hashlib.md5(url.encode()).hexdigest()[:12]
+                self.active_downloads[download_id] = 'streaming'
+                self.send_message({'event': 'started', 'id': download_id})
+
+                def _run_streaming():
+                    try:
+                        self.streaming_manager.download(
+                            url=url,
+                            on_progress=self.on_progress,
+                            on_complete=self.on_complete,
+                            on_error=self.on_error
+                        )
+                    except Exception as e:
+                        self.on_error(download_id, str(e))
+
+                threading.Thread(target=_run_streaming, daemon=True).start()
                 return
 
             # Otherwise use regular segmented downloader
@@ -200,6 +208,8 @@ class NativeMessagingHost:
             return
 
         try:
+            if self.active_downloads.get(download_id) == 'streaming':
+                raise RuntimeError('Pause is not supported for streaming downloads')
             self.download_manager.pause_download(download_id)
             self.send_message({
                 'event': 'paused',
@@ -224,6 +234,8 @@ class NativeMessagingHost:
             return
 
         try:
+            if self.active_downloads.get(download_id) == 'streaming':
+                raise RuntimeError('Resume is not supported for streaming downloads')
             self.download_manager.resume_download(download_id)
             self.send_message({
                 'event': 'resumed',
@@ -248,6 +260,8 @@ class NativeMessagingHost:
             return
 
         try:
+            if self.active_downloads.get(download_id) == 'streaming':
+                raise RuntimeError('Cancel is not supported for streaming downloads')
             self.download_manager.cancel_download(download_id)
             self.send_message({
                 'event': 'cancelled',

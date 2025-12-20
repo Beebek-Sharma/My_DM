@@ -7,6 +7,7 @@ Also supports video streaming sites via yt-dlp
 import os
 import json
 import requests
+import sys
 import threading
 import time
 from pathlib import Path
@@ -66,13 +67,34 @@ class StreamingDownloadManager:
             return self.yt_dlp_available
             
         try:
-            result = subprocess.run(['yt-dlp', '--version'], 
-                                  capture_output=True, text=True, timeout=10)
+            # Prefer running as a module so we don't depend on PATH.
+            result = subprocess.run(
+                [sys.executable, '-m', 'yt_dlp', '--version'],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            if result.returncode == 0:
+                self.yt_dlp_available = True
+                return True
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+
+        try:
+            # Fallback to the yt-dlp executable if present on PATH.
+            result = subprocess.run(['yt-dlp', '--version'], capture_output=True, text=True, timeout=10)
             self.yt_dlp_available = result.returncode == 0
             return self.yt_dlp_available
-        except (subprocess.TimeoutExpired, FileNotFoundError):
+        except (subprocess.TimeoutExpired, FileNotFoundError) as e:
             self.yt_dlp_available = False
             return False
+
+    def _yt_dlp_cmd(self):
+        """Return a command prefix to run yt-dlp reliably."""
+        # If installed in the same environment, `python -m yt_dlp` is the most reliable.
+        if self._check_yt_dlp():
+            return [sys.executable, '-m', 'yt_dlp']
+        return ['yt-dlp']
 
     def _find_cookie_file(self):
         """Look for exported cookies.txt in common locations (Downloads and app directory)."""
@@ -150,16 +172,23 @@ class StreamingDownloadManager:
         
         # Check yt-dlp availability (lazy check)
         if not self._check_yt_dlp():
+            error_msg = "yt-dlp not installed. Install with: pip install yt-dlp"
             if on_error:
-                on_error(download_id, "yt-dlp not installed. Install with: pip install yt-dlp")
+                on_error(download_id, error_msg)
             return None
 
         def build_cmd(cookies_arg=None):
             base = [
-                'yt-dlp',
+                *self._yt_dlp_cmd(),
                 '--no-warnings',
                 '--progress',
                 '--newline',
+                '--no-playlist',  # Force single video extraction (prevents downloading whole playlists)
+                '--socket-timeout', '30',  # 30 second socket timeout
+                '--extractor-args', 'youtube:player_client=web',  # Use web client to bypass age-gate
+                '--extractor-args', 'youtube:skip=dash,hls',  # Skip problematic formats
+                '-f', 'b[ext=mp4]/best[ext=mp4]/best',  # Flexible format selection
+                '--skip-unavailable-fragments',  # Skip unavailable fragments
                 '-o', str(self.download_dir / '%(title)s.%(ext)s')
             ]
             if cookies_arg:
@@ -175,7 +204,7 @@ class StreamingDownloadManager:
         attempts = [None] + cookie_sources
         last_error_text = ''
 
-        for cookies in attempts:
+        for attempt_num, cookies in enumerate(attempts):
             try:
                 cmd = build_cmd(cookies)
                 process = subprocess.Popen(
@@ -257,20 +286,26 @@ class StreamingDownloadManager:
                 return None
 
             if process.returncode == 0:
-                import time
                 time.sleep(1)
                 if on_complete:
                     output_file = self._find_downloaded_file(filename)
                     on_complete(download_id, filename, output_file)
                 return download_id
             else:
+                # Capture stderr for error analysis
                 stderr_output = ''
                 if process.stderr:
                     try:
                         stderr_output = process.stderr.read()
                     except:
                         pass
+                
+                # Log detailed error info
+                cookies_str = f"cookies={cookies}" if cookies else "no-cookies"
+                error_detail = f"Attempt {attempt_num + 1} failed ({cookies_str}): {stderr_output[:200]}"
+                
                 last_error_text = stderr_output or f"Return code {process.returncode}"
+                
                 # If cookie-related error when using a browser cookie source, try next
                 if cookies and (
                     'cookies database' in last_error_text.lower() or
@@ -281,6 +316,12 @@ class StreamingDownloadManager:
                 # If bot-detection without cookies and we have more sources to try, continue
                 if (not cookies) and ('sign in to confirm you' in last_error_text.lower()):
                     continue
+                # If age restriction without cookies, try with cookies
+                if (not cookies) and ('age-restricted' in last_error_text.lower() or 'age restricted' in last_error_text.lower()):
+                    continue
+                # If access denied/unavailable, still try cookies before giving up
+                if (not cookies) and ('not available' in last_error_text.lower() or 'access denied' in last_error_text.lower()):
+                    continue
                 # Otherwise, break and report
                 break
 
@@ -288,10 +329,16 @@ class StreamingDownloadManager:
         cookie_file = None
         if last_error_text and ('dpapi' in last_error_text.lower() or 'cookie' in last_error_text.lower()):
             cookie_file = self._find_cookie_file()
+        
         if cookie_file:
             try:
                 cmd = [
-                    'yt-dlp', '--no-warnings', '--progress', '--newline',
+                    *self._yt_dlp_cmd(), '--no-warnings', '--progress', '--newline',
+                    '--no-playlist',
+                    '--socket-timeout', '30',
+                    '--extractor-args', 'youtube:player_client=web',  # Bypass age-gate
+                    '-f', 'b[ext=mp4]/best[ext=mp4]/best',  # Flexible format
+                    '--skip-unavailable-fragments',
                     '--cookies', cookie_file,
                     '-o', str(self.download_dir / '%(title)s.%(ext)s'),
                     url
@@ -303,17 +350,36 @@ class StreamingDownloadManager:
                     text=True,
                     universal_newlines=True
                 )
-                # Minimal monitor
+                
+                last_progress_time = 0
+                min_progress_interval = 0.5
+                
+                # Monitor progress
                 for line in process.stdout:
                     line = line.strip()
                     if not line:
                         continue
-                    if on_progress and '%' in line:
-                        percent_match = re.search(r'(\d+(?:\.\d+)?)%', line)
-                        if percent_match:
-                            percent = float(percent_match.group(1))
-                            on_progress(download_id, 'video', percent, 'N/A', 0, 0)
-                process.wait(timeout=3600)
+                    
+                    if '[download]' in line and '%' in line:
+                        try:
+                            percent_match = re.search(r'(\d+(?:\.\d+)?)%', line)
+                            if percent_match:
+                                percent = float(percent_match.group(1))
+                                current_time = time.time()
+                                if on_progress and (current_time - last_progress_time) >= min_progress_interval:
+                                    on_progress(download_id, 'video', min(100, max(0, percent)), 'N/A', 0, 0)
+                                    last_progress_time = current_time
+                        except:
+                            pass
+                
+                try:
+                    process.wait(timeout=3600)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    if on_error:
+                        on_error(download_id, "Download timeout - took more than 1 hour")
+                    return None
+                
                 if process.returncode == 0:
                     if on_complete:
                         output_file = self._find_downloaded_file('video.mp4')
@@ -322,15 +388,43 @@ class StreamingDownloadManager:
                 else:
                     if process.stderr:
                         try:
-                            last_error_text = process.stderr.read()
+                            stderr = process.stderr.read()
+                            if stderr:
+                                last_error_text = stderr[:500]
                         except:
                             pass
             except Exception as e:
                 last_error_text = str(e)
 
         # If we reach here, all attempts failed
+        # Build a user-friendly error message
+        error_msg = last_error_text or 'Streaming download failed'
+        
+        # Clean up error message for display
+        error_lower = error_msg.lower()
+        if 'http error 404' in error_lower or 'video unavailable' in error_lower:
+            error_msg = 'Video not found (HTTP 404). Check if the URL is correct.'
+        elif 'http error 403' in error_lower:
+            error_msg = 'Access forbidden (HTTP 403). Video may be private or blocked.'
+        elif 'http error 429' in error_lower:
+            error_msg = 'Too many requests (HTTP 429). Try again later.'
+        elif 'age-restrict' in error_lower or 'age restrict' in error_lower or 'confirm your age' in error_lower:
+            error_msg = 'Video is age-restricted. Please sign in to your account.'
+        elif 'sign in' in error_lower and 'confirm' in error_lower:
+            error_msg = 'Video requires sign-in. Please log into your browser.'
+        elif 'private video' in error_lower or 'video is private' in error_lower:
+            error_msg = 'Video is private. You may need to be logged in.'
+        elif 'not available' in error_lower:
+            error_msg = 'Video is not available in your region or has been deleted.'
+        elif 'disabled' in error_lower:
+            error_msg = 'Downloads are disabled for this video.'
+        elif 'no video formats' in error_lower or 'unable to extract' in error_lower:
+            error_msg = 'Could not extract video. The URL may be invalid or unsupported.'
+        elif len(error_msg) > 200:
+            error_msg = error_msg[:200] + '...'
+        
         if on_error:
-            on_error(download_id, last_error_text or 'Streaming download failed')
+            on_error(download_id, error_msg)
         return None
 
 
@@ -813,3 +907,4 @@ class DownloadManager:
             if download_id in self.downloads:
                 return self.downloads[download_id].copy()
         return None
+

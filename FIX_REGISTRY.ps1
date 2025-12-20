@@ -24,7 +24,7 @@ if (-not $isAdmin) {
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $pythonAppDir = Join-Path $scriptDir "python_app"
 $manifestPath = Join-Path $pythonAppDir "com.mydm.native.json"
-$hostScript = Join-Path $pythonAppDir "mydm_host.py"
+$hostScript = Join-Path $pythonAppDir "start_host.bat"
 
 Write-Host "[PATHS]" -ForegroundColor Yellow
 Write-Host "   Script Directory: $scriptDir" -ForegroundColor Gray

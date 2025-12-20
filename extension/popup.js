@@ -3,18 +3,19 @@
 
 let downloads = new Map();
 let lastUpdateTime = new Date();
+let lastRenderedState = ''; // Track last rendered state to avoid unnecessary re-renders
 
 // Initialize popup on load
 document.addEventListener('DOMContentLoaded', () => {
   loadDownloads();
   startAutoRefresh();
-  
+
   // Attach event listeners to header buttons
   document.getElementById('btnClearCompleted').addEventListener('click', clearCompleted);
   document.getElementById('btnClearAll').addEventListener('click', clearAll);
   document.getElementById('btnDownload').addEventListener('click', downloadFromInput);
   document.getElementById('btnPaste').addEventListener('click', pasteFromClipboard);
-  
+
   // Allow Enter key to trigger download
   document.getElementById('linkInput').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
@@ -27,11 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
 function loadDownloads() {
   chrome.runtime.sendMessage({ action: 'getDownloads' }, (response) => {
     if (response && response.downloads) {
-      downloads.clear();
-      response.downloads.forEach(download => {
-        downloads.set(download.id, download);
-      });
-      renderDownloads();
+      // Create a comparable state string
+      const newState = JSON.stringify(response.downloads);
+
+      // Only update if state has changed
+      if (newState !== lastRenderedState) {
+        downloads.clear();
+        response.downloads.forEach(download => {
+          downloads.set(download.id, download);
+        });
+        lastRenderedState = newState;
+        renderDownloads();
+      }
     }
   });
 }
@@ -63,7 +71,7 @@ function renderDownloads() {
   downloads.forEach((download) => {
     // Safety checks for undefined properties
     if (!download || !download.id) return; // Skip invalid downloads
-    
+
     const filename = download.filename || 'Unknown file';
     const statusClass = download.status || 'downloading';
     const isActive = statusClass === 'downloading' || statusClass === 'paused';
@@ -90,8 +98,9 @@ function renderDownloads() {
       `;
     } else if (statusClass === 'complete') {
       actions = `
-        <button class="btn" style="background: #e8f5e9; color: #388e3c; border: 1px solid #c8e6c9;" disabled type="button">✓ Complete</button>
-        <button class="btn" style="background:#f5f5f5;color:#555;border:1px solid #ddd;" data-action="remove" data-id="${download.id}" type="button">🗑 Remove</button>
+        <button class="btn btn-complete" disabled type="button">✓ Complete</button>
+        <button class="btn btn-show-folder" data-action="showFolder" data-id="${download.id}" type="button">📂 Show in Folder</button>
+        <button class="btn btn-remove" data-action="remove" data-id="${download.id}" type="button">🗑 Remove</button>
       `;
     } else if (statusClass === 'error') {
       actions = `
@@ -118,6 +127,8 @@ function renderDownloads() {
           </div>
         </div>
       `;
+    } else if (statusClass === 'complete') {
+      progressSection = `<div class="success-message">Download complete!</div>`;
     }
 
     // Build download info
@@ -132,7 +143,7 @@ function renderDownloads() {
             ${escapeHtml(filename)}
           </div>
           <span class="download-status ${statusClass}">
-            ${statusClass}
+            ${statusClass === 'complete' ? '<span style="color:#388e3c;font-weight:bold;">✓ Complete</span>' : statusClass}
           </span>
         </div>
         <div class="download-info">
@@ -148,15 +159,13 @@ function renderDownloads() {
 
   container.innerHTML = html;
   updateLastUpdated();
-  
+
   // Attach event listeners to all action buttons
   container.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]');
     if (!btn) return;
-    
     const action = btn.dataset.action;
     const downloadId = btn.dataset.id;
-    
     if (action === 'pause') {
       pauseDownload(downloadId);
     } else if (action === 'resume') {
@@ -165,8 +174,17 @@ function renderDownloads() {
       cancelDownload(downloadId);
     } else if (action === 'remove') {
       removeDownload(downloadId);
+    } else if (action === 'showFolder') {
+      showInFolder(downloadId);
     }
   });
+  // Show in folder for completed download
+  function showInFolder(downloadId) {
+    chrome.runtime.sendMessage({
+      action: 'showInFolder',
+      id: downloadId
+    });
+  }
 }
 
 // Pause a download
@@ -239,18 +257,51 @@ function clearAll() {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'updateDownload') {
     const message = request.data;
-    if (message.id) {
-      // Update or create download entry
-      if (downloads.has(message.id)) {
-        const existing = downloads.get(message.id);
-        downloads.set(message.id, { ...existing, ...message });
-      } else {
-        downloads.set(message.id, message);
-      }
-      renderDownloads();
-    }
+    if (!message || !message.id) return;
+
+    // Normalize native-host events into the popup's download object shape.
+    const normalized = normalizeNativeMessage(message);
+    const existing = downloads.get(message.id) || {};
+    downloads.set(message.id, { ...existing, ...normalized });
+    renderDownloads();
   }
 });
+
+function normalizeNativeMessage(message) {
+  const out = { ...message };
+
+  // Convert native host event into a stable status field.
+  if (message.event === 'started') {
+    out.status = 'downloading';
+    out.filename = out.filename || 'Starting download...';
+    out.percent = typeof out.percent === 'number' ? out.percent : 0;
+    out.speed = out.speed || 'N/A';
+    out.size = typeof out.size === 'number' ? out.size : 0;
+    out.downloaded = typeof out.downloaded === 'number' ? out.downloaded : 0;
+  } else if (message.event === 'progress') {
+    out.status = 'downloading';
+  } else if (message.event === 'paused') {
+    out.status = 'paused';
+  } else if (message.event === 'resumed') {
+    out.status = 'downloading';
+  } else if (message.event === 'cancelled') {
+    out.status = 'cancelled';
+  } else if (message.event === 'complete') {
+    out.status = 'complete';
+    out.percent = 100;
+  } else if (message.event === 'error') {
+    out.status = 'error';
+    out.filename = out.filename || 'Unknown file';
+  }
+
+  // Ensure percent is a safe number when present.
+  if (out.percent !== undefined) {
+    const p = Number(out.percent);
+    out.percent = Number.isFinite(p) ? Math.min(100, Math.max(0, p)) : 0;
+  }
+
+  return out;
+}
 
 // Auto-refresh downloads every 1000ms (reduced from 500ms for performance)
 function startAutoRefresh() {
@@ -302,12 +353,12 @@ function escapeHtml(text) {
 // Download from input box
 function downloadFromInput() {
   const url = document.getElementById('linkInput').value.trim();
-  
+
   if (!url) {
     alert('Please enter a URL');
     return;
   }
-  
+
   // Validate URL
   try {
     new URL(url);
@@ -315,7 +366,7 @@ function downloadFromInput() {
     alert('Please enter a valid URL');
     return;
   }
-  
+
   // Send download request to background
   chrome.runtime.sendMessage({
     action: 'downloadFromPopup',

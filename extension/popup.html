@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyDM - Download Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,99 +15,297 @@
             box-sizing: border-box;
         }
 
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
         body {
-            width: 500px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 520px;
+            min-height: 400px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(-45deg, #1e3a8a, #1e40af, #3b82f6, #0ea5e9, #06b6d4);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
             color: #333;
+            overflow: hidden;
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             color: white;
-            padding: 15px 20px;
+            padding: 16px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
 
         .header h1 {
-            font-size: 18px;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-icon {
+            font-size: 24px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+        }
+
+        .status-badge {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .status-badge:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: scale(1.05);
+        }
+
+        .input-section {
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #linkInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        #linkInput:focus {
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        #linkInput::placeholder {
+            color: #999;
+        }
+
+        .btn-primary {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #3b82f6;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-actions {
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .header-icon {
-            font-size: 20px;
+        .btn-header {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            white-space: nowrap;
         }
 
-        .status-badge {
+        .btn-header:hover {
             background: rgba(255, 255, 255, 0.3);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
+            transform: translateY(-1px);
+        }
+
+        .btn-header.danger:hover {
+            background: rgba(239, 68, 68, 0.8);
+            border-color: rgba(239, 68, 68, 0.9);
+        }
+
+        .btn-header.success:hover {
+            background: rgba(34, 197, 94, 0.8);
+            border-color: rgba(34, 197, 94, 0.9);
         }
 
         .container {
             padding: 0;
-            max-height: 500px;
+            max-height: 450px;
             overflow-y: auto;
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .container::-webkit-scrollbar {
-            width: 6px;
+            width: 8px;
         }
 
         .container::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .container::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
         }
 
         .container::-webkit-scrollbar-thumb:hover {
-            background: #555;
+            background: rgba(255, 255, 255, 0.5);
         }
 
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
-            color: #999;
+            padding: 60px 20px;
+            color: white;
+            animation: fadeIn 0.5s ease;
         }
 
         .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-            opacity: 0.5;
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
         }
 
         .empty-state p {
             margin-bottom: 8px;
+            font-weight: 500;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .empty-state p:first-of-type {
+            font-size: 16px;
+            font-weight: 600;
         }
 
         .download-item {
-            background: white;
-            border-bottom: 1px solid #eee;
-            padding: 15px 20px;
-            transition: background 0.2s;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 16px 20px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.4s ease;
+            margin: 8px 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .download-item:hover {
-            background: #f9f9f9;
+            background: rgba(255, 255, 255, 1);
+            transform: translateX(4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
 
         .download-item.complete {
-            background: #f0f9ff;
+            background: linear-gradient(135deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.95) 100%);
+            border-left: 4px solid #10b981;
         }
 
         .download-item.error {
-            background: #fef2f2;
+            background: linear-gradient(135deg, rgba(254, 242, 242, 0.95) 0%, rgba(254, 226, 226, 0.95) 100%);
+            border-left: 4px solid #ef4444;
+        }
+
+        .download-item.downloading {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .download-item.paused {
+            border-left: 4px solid #f59e0b;
         }
 
         .download-header {
@@ -115,49 +317,53 @@
 
         .download-name {
             font-size: 14px;
-            font-weight: 500;
-            color: #333;
+            font-weight: 600;
+            color: #1f2937;
             flex: 1;
             word-break: break-word;
             margin-right: 10px;
+            line-height: 1.4;
         }
 
         .download-status {
-            font-size: 11px;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-weight: 500;
+            font-size: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 700;
             white-space: nowrap;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .download-status.downloading {
-            background: #e3f2fd;
-            color: #1976d2;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            animation: pulse 2s ease-in-out infinite;
         }
 
         .download-status.complete {
-            background: #e8f5e9;
-            color: #388e3c;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
         }
 
         .download-status.paused {
-            background: #fff3e0;
-            color: #f57c00;
+            background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
+            color: #92400e;
         }
 
         .download-status.error {
-            background: #ffebee;
-            color: #d32f2f;
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+            color: #991b1b;
         }
 
         .download-info {
             font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
+            color: #6b7280;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             gap: 10px;
+            font-weight: 500;
         }
 
         .download-info-item {
@@ -166,125 +372,174 @@
         }
 
         .progress-container {
-            margin: 10px 0;
+            margin: 12px 0;
         }
 
         .progress-bar {
             width: 100%;
-            height: 6px;
-            background: #e0e0e0;
-            border-radius: 3px;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 10px;
             overflow: hidden;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
         }
 
         .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-radius: 3px;
+            background: linear-gradient(90deg, #3b82f6 0%, #1e40af 50%, #0ea5e9 100%);
+            background-size: 200% 100%;
+            border-radius: 10px;
             transition: width 0.3s ease;
+            animation: gradientShift 3s ease infinite;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
         }
 
         .progress-text {
             font-size: 11px;
-            color: #666;
+            color: #6b7280;
             display: flex;
             justify-content: space-between;
+            font-weight: 600;
         }
 
         .download-actions {
             display: flex;
             gap: 8px;
-            margin-top: 10px;
+            margin-top: 12px;
         }
 
         .btn {
             flex: 1;
-            padding: 6px 12px;
+            padding: 8px 12px;
             border: none;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
             text-transform: uppercase;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.3px;
         }
 
         .btn-pause {
-            background: #fff3e0;
-            color: #f57c00;
-            border: 1px solid #ffe0b2;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border: 1px solid #fbbf24;
         }
 
         .btn-pause:hover {
-            background: #ffe0b2;
+            background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
         }
 
         .btn-resume {
-            background: #e3f2fd;
-            color: #1976d2;
-            border: 1px solid #bbdefb;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            border: 1px solid #60a5fa;
         }
 
         .btn-resume:hover {
-            background: #bbdefb;
+            background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
         }
 
         .btn-cancel {
-            background: #ffebee;
-            color: #d32f2f;
-            border: 1px solid #ffcdd2;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #f87171;
         }
 
         .btn-cancel:hover {
-            background: #ffcdd2;
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
+        }
+
+        .btn-complete {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #34d399;
+        }
+
+        .btn-show-folder,
+        .btn-remove {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-show-folder:hover,
+        .btn-remove:hover {
+            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
         .btn:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
+            transform: none !important;
         }
 
         .footer {
-            background: #f5f5f5;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
             padding: 12px 20px;
-            border-top: 1px solid #e0e0e0;
-            font-size: 12px;
-            color: #999;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 11px;
+            color: white;
             text-align: center;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .error-message {
-            color: #d32f2f;
+            color: #991b1b;
             font-size: 12px;
             margin-top: 8px;
-            padding: 8px;
-            background: #ffebee;
-            border-left: 3px solid #d32f2f;
-            border-radius: 2px;
+            padding: 10px 12px;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border-left: 3px solid #dc2626;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .success-message {
+            color: #065f46;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-radius: 6px;
+            text-align: center;
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>
             <span class="header-icon">📥</span>
             <span>MyDM</span>
         </h1>
-        <div style="display:flex; align-items:center; gap:8px;">
-            <button id="btnClearCompleted" class="btn" style="flex:none;background:#eef7ee;color:#2e7d32;border:1px solid #c8e6c9;padding:4px 10px;">Clear Completed</button>
-            <button id="btnClearAll" class="btn" style="flex:none;background:#ffebee;color:#c62828;border:1px solid #ffcdd2;padding:4px 10px;">Clear All</button>
+        <div class="header-actions">
+            <button id="btnClearCompleted" class="btn-header success">Clear Completed</button>
+            <button id="btnClearAll" class="btn-header danger">Clear All</button>
             <span class="status-badge" id="statusBadge">Loading...</span>
         </div>
     </div>
 
-    <div style="padding: 12px 15px; background: #f5f5f5; border-bottom: 1px solid #ddd;">
-        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-            <input type="text" id="linkInput" placeholder="Paste link here..." style="flex: 1; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
-            <button id="btnDownload" style="padding: 8px 15px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 12px;">Download</button>
+    <div class="input-section">
+        <div class="input-group">
+            <input type="text" id="linkInput" placeholder="Paste download link here...">
+            <button id="btnDownload" class="btn-primary">Download</button>
         </div>
         <div style="display: flex; gap: 8px;">
-            <button id="btnPaste" style="flex: 1; padding: 6px 10px; background: #e3f2fd; color: #1976d2; border: 1px solid #bbdefb; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 500;">📋 Paste from Clipboard</button>
+            <button id="btnPaste" class="btn-secondary">📋 Paste from Clipboard</button>
         </div>
     </div>
 
@@ -292,7 +547,7 @@
         <div class="empty-state">
             <div class="empty-state-icon">📁</div>
             <p>No active downloads</p>
-            <p style="font-size: 12px;">Right-click any file to download with MyDM</p>
+            <p style="font-size: 13px; opacity: 0.9;">Right-click any file to download with MyDM</p>
         </div>
     </div>
 
@@ -302,4 +557,5 @@
 
     <script src="popup.js"></script>
 </body>
+
 </html>

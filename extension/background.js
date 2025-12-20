@@ -18,8 +18,13 @@ function persistQueue() {
 
 // Load persisted queue when SW starts
 chrome.storage.local.get('downloads', (result) => {
-  const list = result.downloads || [];
-  list.forEach(d => downloadQueue.set(d.id, d));
+  let list = [];
+  if (result && Array.isArray(result.downloads)) {
+    list = result.downloads;
+  }
+  list.forEach(d => {
+    if (d && d.id) downloadQueue.set(d.id, d);
+  });
 });
 
 // Initialize context menu on extension load
