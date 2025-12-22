@@ -130,14 +130,27 @@ try {
     exit 1
 }
 
-# Verify requests module
+# Verify modules in the same Python environment that the host prefers (.venv if present)
+$repoRoot = Split-Path -Parent $scriptDir
+$venvPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
+$pythonToCheck = if (Test-Path $venvPython) { $venvPython } else { "python" }
+
 try {
-    python -c "import requests" 2>&1 | Out-Null
+    & $pythonToCheck -c "import requests" 2>&1 | Out-Null
     Write-Host "[OK] requests module installed" -ForegroundColor Green
 } catch {
-    Write-Host "[ERROR] requests module not installed" -ForegroundColor Red
-    Write-Host "   Run: pip install requests" -ForegroundColor Yellow
+    Write-Host "[ERROR] requests module not installed in: $pythonToCheck" -ForegroundColor Red
+    Write-Host "   Run: $pythonToCheck -m pip install -r requirements.txt" -ForegroundColor Yellow
     exit 1
+}
+
+try {
+    & $pythonToCheck -c "import yt_dlp" 2>&1 | Out-Null
+    Write-Host "[OK] yt-dlp module installed" -ForegroundColor Green
+} catch {
+    Write-Host "[WARNING] yt-dlp not installed in: $pythonToCheck" -ForegroundColor Yellow
+    Write-Host "          Streaming downloads will fail until installed." -ForegroundColor Yellow
+    Write-Host "          Run: $pythonToCheck -m pip install yt-dlp" -ForegroundColor Yellow
 }
 
 Write-Host ""

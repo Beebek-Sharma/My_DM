@@ -3,6 +3,13 @@ setlocal enabledelayedexpansion
 
 set "SCRIPT_DIR=%~dp0"
 
+REM Prefer the repo-local venv if present (most reliable for packaged deps).
+set "VENV_PY=%SCRIPT_DIR%..\.venv\Scripts\python.exe"
+if exist "%VENV_PY%" (
+	"%VENV_PY%" -u "%SCRIPT_DIR%run_host.py"
+	exit /b %ERRORLEVEL%
+)
+
 REM Native messaging requires reliable stdio; run Python unbuffered.
 REM Prefer the Windows py launcher, fall back to python on PATH.
 

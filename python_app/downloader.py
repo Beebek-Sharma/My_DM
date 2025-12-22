@@ -63,8 +63,19 @@ class StreamingDownloadManager:
 
     def _check_yt_dlp(self):
         """Check if yt-dlp is installed and accessible (lazy check)"""
-        if self.yt_dlp_available is not None:
-            return self.yt_dlp_available
+        # Cache only a successful detection. If we previously detected it was missing,
+        # re-check on subsequent calls so installing while the host is running works
+        # without requiring a full Chrome restart.
+        if self.yt_dlp_available is True:
+            return True
+
+        # Fast path: module import check (no subprocess)
+        try:
+            import yt_dlp  # noqa: F401
+            self.yt_dlp_available = True
+            return True
+        except Exception:
+            pass
             
         try:
             # Prefer running as a module so we don't depend on PATH.
@@ -83,10 +94,11 @@ class StreamingDownloadManager:
         try:
             # Fallback to the yt-dlp executable if present on PATH.
             result = subprocess.run(['yt-dlp', '--version'], capture_output=True, text=True, timeout=10)
-            self.yt_dlp_available = result.returncode == 0
-            return self.yt_dlp_available
+            if result.returncode == 0:
+                self.yt_dlp_available = True
+                return True
+            return False
         except (subprocess.TimeoutExpired, FileNotFoundError) as e:
-            self.yt_dlp_available = False
             return False
 
     def _yt_dlp_cmd(self):
@@ -172,7 +184,11 @@ class StreamingDownloadManager:
         
         # Check yt-dlp availability (lazy check)
         if not self._check_yt_dlp():
-            error_msg = "yt-dlp not installed. Install with: pip install yt-dlp"
+            error_msg = (
+                f"yt-dlp not installed in host Python ({sys.executable}). "
+                f"Install with: {sys.executable} -m pip install yt-dlp "
+                f"(or: {sys.executable} -m pip install -r requirements.txt)"
+            )
             if on_error:
                 on_error(download_id, error_msg)
             return None
@@ -210,7 +226,7 @@ class StreamingDownloadManager:
                 process = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
                     text=True,
                     universal_newlines=True
                 )
@@ -223,12 +239,18 @@ class StreamingDownloadManager:
             downloaded_size = 0
             last_progress_time = 0
             min_progress_interval = 0.5  # Only report progress every 500ms max
+            recent_output = []
 
-            # Monitor progress
+            # Monitor progress (yt-dlp progress is typically written to stderr, so we merge stderr->stdout above)
             for line in process.stdout:
                 line = line.strip()
                 if not line:
                     continue
+
+                # Keep a short tail for error reporting
+                if len(recent_output) >= 80:
+                    recent_output.pop(0)
+                recent_output.append(line)
 
                 # Extract filename from destination line first
                 if '[download]' in line and 'Destination:' in line:
@@ -292,14 +314,8 @@ class StreamingDownloadManager:
                     on_complete(download_id, filename, output_file)
                 return download_id
             else:
-                # Capture stderr for error analysis
-                stderr_output = ''
-                if process.stderr:
-                    try:
-                        stderr_output = process.stderr.read()
-                    except:
-                        pass
-                
+                stderr_output = "\n".join(recent_output[-40:])
+
                 # Log detailed error info
                 cookies_str = f"cookies={cookies}" if cookies else "no-cookies"
                 error_detail = f"Attempt {attempt_num + 1} failed ({cookies_str}): {stderr_output[:200]}"
@@ -346,19 +362,24 @@ class StreamingDownloadManager:
                 process = subprocess.Popen(
                     cmd,
                     stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
                     text=True,
                     universal_newlines=True
                 )
                 
                 last_progress_time = 0
                 min_progress_interval = 0.5
+                recent_output = []
                 
                 # Monitor progress
                 for line in process.stdout:
                     line = line.strip()
                     if not line:
                         continue
+
+                    if len(recent_output) >= 80:
+                        recent_output.pop(0)
+                    recent_output.append(line)
                     
                     if '[download]' in line and '%' in line:
                         try:
@@ -386,13 +407,9 @@ class StreamingDownloadManager:
                         on_complete(download_id, 'video', output_file)
                     return download_id
                 else:
-                    if process.stderr:
-                        try:
-                            stderr = process.stderr.read()
-                            if stderr:
-                                last_error_text = stderr[:500]
-                        except:
-                            pass
+                    stderr_output = "\n".join(recent_output[-40:])
+                    if stderr_output:
+                        last_error_text = stderr_output[:500]
             except Exception as e:
                 last_error_text = str(e)
 

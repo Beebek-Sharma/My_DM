@@ -35,7 +35,7 @@ MyDM/
 
 - **Python 3.7 or higher** (with pip)
 - **Chrome or Edge browser** (must support Manifest V3)
-- **requests library** for HTTP downloads
+- **Python packages** from `requirements.txt` (includes `requests` and `yt-dlp`)
 
 ### Installation
 
@@ -46,7 +46,7 @@ MyDM/
 2. **Install required Python packages:**
 
 ```powershell
-pip install requests
+python -m pip install -r requirements.txt
 ```
 
 ## 🔧 Setup Instructions
@@ -56,10 +56,10 @@ pip install requests
 1. Extract the MyDM project to a permanent location (e.g., `C:\Users\YourUsername\MyDM`)
 2. Open PowerShell and navigate to the python_app folder:
    ```powershell
-   cd "C:\Users\YourUsername\MyDM\python_app"
-   python mydm_host.py
+   cd "C:\Users\YourUsername\MyDM"
+   python_app\start_host.bat
    ```
-3. If there's no error, note the full path to `mydm_host.py`. Press `Ctrl+C` to stop.
+3. If there's no error, note the full path to `python_app\\start_host.bat`. Press `Ctrl+C` to stop.
 
 ### Step 2: Load the Chrome Extension
 
@@ -75,7 +75,7 @@ pip install requests
 ### Step 3: Configure the Native Messaging Manifest
 
 1. Open the file: `python_app/com.mydm.native.json`
-2. Replace `C:\Path\To\MyDM\python_app\mydm_host.py` with your actual path (use backslashes: `\\`)
+2. Replace `C:\Path\To\MyDM\python_app\start_host.bat` with your actual path (use backslashes: `\\`)
 3. Replace `REPLACE_WITH_YOUR_EXTENSION_ID` with the Extension ID from Step 2
 
 **Example:**
@@ -83,7 +83,7 @@ pip install requests
 {
   "name": "com.mydm.native",
   "description": "MyDM Python Native Host for Chrome Extension",
-  "path": "C:\\Users\\YourUsername\\MyDM\\python_app\\mydm_host.py",
+   "path": "C:\\Users\\YourUsername\\MyDM\\python_app\\start_host.bat",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://pbcdefghijklmnopqrstuvwxyz123456/"
