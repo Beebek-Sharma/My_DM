@@ -1,14 +1,37 @@
+# Python & Bytecode
 __pycache__/
 *.py[cod]
 *$py.class
 
+# Testing & Coverage
 .pytest_cache/
 .coverage
 htmlcov/
 
+# Virtual Environments
 .venv/
 env/
 venv/
 ENV/
 
+# Logs & Temp
 *.log
+*.tmp
+*.bak
+
+# GitHub & IDE configuration
+.github/
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
