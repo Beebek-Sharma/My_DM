@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
   "name": "MyDM - Download Manager",
-  "version": "1.0.0",
-  "description": "An IDM-like downloader that integrates with Chrome for segmented multi-threaded downloads",
+  "version": "2.0.0",
+  "description": "An advanced, browser-native download manager featuring smart queueing, media detection, resume, and categorization.",
   "permissions": [
-    "contextMenus",
-    "nativeMessaging",
+    "downloads",
     "storage",
+    "contextMenus",
     "activeTab",
     "scripting",
-    "clipboardRead"
+    "clipboardRead",
+    "nativeMessaging"
   ],
   "host_permissions": [
     "https://*/*",
@@ -18,6 +19,18 @@
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*/*",
+        "http://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "MyDM Download Manager",

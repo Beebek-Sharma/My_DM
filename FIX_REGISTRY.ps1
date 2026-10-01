@@ -55,7 +55,7 @@ Write-Host "[STEP 2] Updating manifest JSON..." -ForegroundColor Yellow
 $manifest = @{
     "name" = "com.mydm.native"
     "description" = "MyDM Python Native Host for Chrome Extension"
-    "path" = $hostScript -replace '\\', '\\'
+    "path" = $hostScript
     "type" = "stdio"
     "allowed_origins" = @(
         "chrome-extension://$extensionId/"
@@ -63,7 +63,7 @@ $manifest = @{
 } | ConvertTo-Json
 
 try {
-    $manifest | Out-File -FilePath $manifestPath -Encoding UTF8 -Force
+    [System.IO.File]::WriteAllText($manifestPath, $manifest, [System.Text.UTF8Encoding]::new($false))
     Write-Host "[OK] Manifest JSON updated successfully" -ForegroundColor Green
 } catch {
     Write-Host "[ERROR] Failed to update manifest: $_" -ForegroundColor Red

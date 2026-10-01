@@ -1,561 +1,628 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyDM - Download Manager</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        @keyframes gradientShift {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
-            }
-        }
-
-        body {
-            width: 520px;
-            min-height: 400px;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(-45deg, #1e3a8a, #1e40af, #3b82f6, #0ea5e9, #06b6d4);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-            color: #333;
-            overflow: hidden;
-        }
-
-        .header {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .header h1 {
-            font-size: 20px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .header-icon {
-            font-size: 24px;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-        }
-
-        .status-badge {
-            background: rgba(255, 255, 255, 0.25);
-            backdrop-filter: blur(10px);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .status-badge:hover {
-            background: rgba(255, 255, 255, 0.35);
-            transform: scale(1.05);
-        }
-
-        .input-section {
-            padding: 16px 20px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        #linkInput {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            font-size: 13px;
-            font-family: 'Inter', sans-serif;
-            background: rgba(255, 255, 255, 0.9);
-            color: #333;
-            transition: all 0.3s ease;
-            outline: none;
-        }
-
-        #linkInput:focus {
-            border-color: rgba(255, 255, 255, 0.6);
-            background: rgba(255, 255, 255, 1);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            transform: translateY(-1px);
-        }
-
-        #linkInput::placeholder {
-            color: #999;
-        }
-
-        .btn-primary {
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        .btn-secondary {
-            flex: 1;
-            padding: 10px 14px;
-            background: rgba(255, 255, 255, 0.9);
-            color: #3b82f6;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.3s ease;
-        }
-
-        .btn-secondary:hover {
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-header {
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .btn-header:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-1px);
-        }
-
-        .btn-header.danger:hover {
-            background: rgba(239, 68, 68, 0.8);
-            border-color: rgba(239, 68, 68, 0.9);
-        }
-
-        .btn-header.success:hover {
-            background: rgba(34, 197, 94, 0.8);
-            border-color: rgba(34, 197, 94, 0.9);
-        }
-
-        .container {
-            padding: 0;
-            max-height: 450px;
-            overflow-y: auto;
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .container::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .container::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .container::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 4px;
-        }
-
-        .container::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: white;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .empty-state-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-            opacity: 0.8;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
-        }
-
-        .empty-state p {
-            margin-bottom: 8px;
-            font-weight: 500;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .empty-state p:first-of-type {
-            font-size: 16px;
-            font-weight: 600;
-        }
-
-        .download-item {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-            padding: 16px 20px;
-            transition: all 0.3s ease;
-            animation: fadeIn 0.4s ease;
-            margin: 8px 12px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .download-item:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: translateX(4px);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-
-        .download-item.complete {
-            background: linear-gradient(135deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.95) 100%);
-            border-left: 4px solid #10b981;
-        }
-
-        .download-item.error {
-            background: linear-gradient(135deg, rgba(254, 242, 242, 0.95) 0%, rgba(254, 226, 226, 0.95) 100%);
-            border-left: 4px solid #ef4444;
-        }
-
-        .download-item.downloading {
-            border-left: 4px solid #3b82f6;
-        }
-
-        .download-item.paused {
-            border-left: 4px solid #f59e0b;
-        }
-
-        .download-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 10px;
-        }
-
-        .download-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1f2937;
-            flex: 1;
-            word-break: break-word;
-            margin-right: 10px;
-            line-height: 1.4;
-        }
-
-        .download-status {
-            font-size: 10px;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-weight: 700;
-            white-space: nowrap;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .download-status.downloading {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            color: #1e40af;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        .download-status.complete {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            color: #065f46;
-        }
-
-        .download-status.paused {
-            background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
-            color: #92400e;
-        }
-
-        .download-status.error {
-            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-            color: #991b1b;
-        }
-
-        .download-info {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            font-weight: 500;
-        }
-
-        .download-info-item {
-            display: flex;
-            gap: 4px;
-        }
-
-        .progress-container {
-            margin: 12px 0;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(0, 0, 0, 0.08);
-            border-radius: 10px;
-            overflow: hidden;
-            margin-bottom: 6px;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3b82f6 0%, #1e40af 50%, #0ea5e9 100%);
-            background-size: 200% 100%;
-            border-radius: 10px;
-            transition: width 0.3s ease;
-            animation: gradientShift 3s ease infinite;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
-        }
-
-        .progress-text {
-            font-size: 11px;
-            color: #6b7280;
-            display: flex;
-            justify-content: space-between;
-            font-weight: 600;
-        }
-
-        .download-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .btn {
-            flex: 1;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            font-family: 'Inter', sans-serif;
-            letter-spacing: 0.3px;
-        }
-
-        .btn-pause {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            color: #92400e;
-            border: 1px solid #fbbf24;
-        }
-
-        .btn-pause:hover {
-            background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
-        }
-
-        .btn-resume {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            color: #1e40af;
-            border: 1px solid #60a5fa;
-        }
-
-        .btn-resume:hover {
-            background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(96, 165, 250, 0.3);
-        }
-
-        .btn-cancel {
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-            color: #991b1b;
-            border: 1px solid #f87171;
-        }
-
-        .btn-cancel:hover {
-            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
-        }
-
-        .btn-complete {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            color: #065f46;
-            border: 1px solid #34d399;
-        }
-
-        .btn-show-folder,
-        .btn-remove {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            color: #374151;
-            border: 1px solid #d1d5db;
-        }
-
-        .btn-show-folder:hover,
-        .btn-remove:hover {
-            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .footer {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(15px);
-            padding: 12px 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
-            font-size: 11px;
-            color: white;
-            text-align: center;
-            font-weight: 500;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        }
-
-        .error-message {
-            color: #991b1b;
-            font-size: 12px;
-            margin-top: 8px;
-            padding: 10px 12px;
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-            border-left: 3px solid #dc2626;
-            border-radius: 6px;
-            font-weight: 500;
-        }
-
-        .success-message {
-            color: #065f46;
-            font-size: 12px;
-            font-weight: 600;
-            padding: 8px 12px;
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            border-radius: 6px;
-            text-align: center;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyDM - Download Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --item-bg: rgba(30, 41, 59, 0.7);
+      --item-border: rgba(255, 255, 255, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 540px;
+      height: 580px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* Header */
+    .header {
+      padding: 14px 18px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo {
+      font-size: 22px;
+      filter: drop-shadow(0 2px 6px rgba(56, 189, 248, 0.4));
+    }
+
+    .header-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #fff;
+    }
+
+    .badge-status {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 12px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-header {
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-header:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Tabs */
+    .tabs-nav {
+      display: flex;
+      background: rgba(15, 23, 42, 0.6);
+      border-bottom: 1px solid var(--card-border);
+      padding: 0 12px;
+    }
+
+    .tab-btn {
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* URL Input Section */
+    .input-section {
+      padding: 12px 16px;
+      background: rgba(30, 41, 59, 0.5);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.8);
+      color: #fff;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    .btn-action {
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #0f172a;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Filter / Search Bar */
+    .filter-bar {
+      padding: 8px 16px;
+      background: rgba(15, 23, 42, 0.4);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 6px 10px;
+      font-size: 11px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      outline: none;
+    }
+
+    .category-select {
+      padding: 6px 8px;
+      font-size: 11px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      outline: none;
+    }
+
+    /* Tab Content Areas */
+    .tab-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Custom Scrollbar */
+    .tab-content::-webkit-scrollbar {
+      width: 6px;
+    }
+    .tab-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 42px;
+      margin-bottom: 12px;
+      opacity: 0.6;
+    }
+
+    /* Download Item Card */
+    .download-card {
+      background: var(--item-bg);
+      border: 1px solid var(--item-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+    }
+
+    .download-card:hover {
+      border-color: rgba(56, 189, 248, 0.3);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+      gap: 10px;
+    }
+
+    .card-filename {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      word-break: break-all;
+      flex: 1;
+      line-height: 1.3;
+    }
+
+    .card-badges {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .badge-category {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+    }
+
+    .badge-QUEUED { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+    .badge-STARTING { background: rgba(56, 189, 248, 0.2); color: var(--primary); }
+    .badge-DOWNLOADING { background: rgba(56, 189, 248, 0.2); color: var(--primary); }
+    .badge-PAUSED { background: rgba(251, 191, 36, 0.2); color: var(--warning); }
+    .badge-COMPLETED { background: rgba(52, 211, 153, 0.2); color: var(--success); }
+    .badge-FAILED { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
+    .badge-RETRYING { background: rgba(192, 132, 252, 0.2); color: #c084fc; }
+    .badge-CANCELLED { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+
+    /* Progress Bar */
+    .progress-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-bar-fill.complete {
+      background: linear-gradient(90deg, #34d399 0%, #059669 100%);
+    }
+
+    .progress-bar-fill.error {
+      background: linear-gradient(90deg, #f87171 0%, #dc2626 100%);
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .card-error {
+      font-size: 11px;
+      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.15);
+      border-left: 3px solid var(--danger);
+      padding: 6px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+
+    /* Card Controls */
+    .card-controls {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-ctrl {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 5px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-ctrl:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-ctrl.danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: var(--danger);
+      color: #fecaca;
+    }
+
+    .btn-ctrl.success:hover {
+      background: rgba(52, 211, 153, 0.25);
+      border-color: var(--success);
+      color: #d1fae5;
+    }
+
+    /* Media Sniffer Card */
+    .media-card {
+      background: var(--item-bg);
+      border: 1px solid var(--item-border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .media-info {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .media-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .media-url {
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Settings Form */
+    .settings-group {
+      background: var(--item-bg);
+      border: 1px solid var(--item-border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+
+    .settings-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .settings-row:last-child {
+      border-bottom: none;
+    }
+
+    .settings-label {
+      font-size: 12px;
+      color: var(--text-main);
+    }
+
+    .settings-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .settings-input {
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      font-size: 12px;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 8px 16px;
+      background: rgba(15, 23, 42, 0.85);
+      border-top: 1px solid var(--card-border);
+      font-size: 10px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
 </head>
-
 <body>
-    <div class="header">
-        <h1>
-            <span class="header-icon">📥</span>
-            <span>MyDM</span>
-        </h1>
-        <div class="header-actions">
-            <button id="btnClearCompleted" class="btn-header success">Clear Completed</button>
-            <button id="btnClearAll" class="btn-header danger">Clear All</button>
-            <span class="status-badge" id="statusBadge">Loading...</span>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <span class="header-logo">📥</span>
+      <div>
+        <h1 class="header-title">MyDM</h1>
+      </div>
+      <span id="badgeActiveCount" class="badge-status">Idle</span>
+    </div>
+    <div class="header-actions">
+      <button id="btnClearCompleted" class="btn-header" title="Clear completed downloads from list">Clear Done</button>
+      <button id="btnClearAll" class="btn-header" title="Clear all downloads from history">Clear All</button>
+      <button id="btnReloadExt" class="btn-header" title="Reload extension from disk">🔄 Reload</button>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="tabs-nav" role="tablist">
+    <button class="tab-btn active" data-tab="downloads" role="tab">All Downloads</button>
+    <button class="tab-btn" data-tab="active" role="tab">Active</button>
+    <button class="tab-btn" data-tab="completed" role="tab">Completed</button>
+    <button class="tab-btn" data-tab="sniffer" role="tab">🔍 Media Sniffer</button>
+    <button class="tab-btn" data-tab="settings" role="tab">⚙️ Settings</button>
+  </nav>
+
+  <!-- Download Link Input Bar -->
+  <div class="input-section">
+    <input type="text" id="inputUrl" class="input-field" placeholder="Paste URL to download (http:// or https://)..." autocomplete="off" />
+    <button id="btnStartDownload" class="btn-action btn-primary">⬇️ Download</button>
+    <button id="btnPasteClipboard" class="btn-action btn-secondary" title="Paste from clipboard">📋 Paste</button>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="filter-bar">
+    <input type="text" id="inputSearch" class="search-input" placeholder="Search by filename or URL..." />
+    <select id="selectCategory" class="category-select">
+      <option value="ALL">All Categories</option>
+      <option value="Documents">📄 Documents</option>
+      <option value="Images">🖼️ Images</option>
+      <option value="Videos">🎬 Videos</option>
+      <option value="Audio">🎵 Audio</option>
+      <option value="Archives">📦 Archives</option>
+      <option value="Programs">💻 Programs</option>
+      <option value="ISOs">💿 ISOs</option>
+      <option value="Other">📁 Other</option>
+    </select>
+  </div>
+
+  <!-- Tab 1: Downloads Container -->
+  <main id="tabDownloads" class="tab-content active" role="tabpanel">
+    <div id="downloadsList">
+      <div class="empty-state">
+        <div class="empty-icon">📁</div>
+        <p>No downloads yet.</p>
+        <p style="font-size: 11px; margin-top: 4px;">Paste a link above or right-click any link/media to download with MyDM.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Tab 2: Media Sniffer -->
+  <section id="tabSniffer" class="tab-content" role="tabpanel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <span style="font-size: 12px; color: var(--text-muted);">Media & Streams on Active Tab:</span>
+      <button id="btnScanMedia" class="btn-action btn-secondary" style="padding: 4px 10px; font-size: 11px;">🔄 Scan Page</button>
+    </div>
+    <div id="snifferList">
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <p>No media detected yet.</p>
+        <p style="font-size: 11px; margin-top: 4px;">Click "Scan Page" to discover video, audio, and stream playlists.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab 3: Settings Panel -->
+  <section id="tabSettings" class="tab-content" role="tabpanel">
+    <div class="settings-group">
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Max Concurrent Downloads</div>
+          <div class="settings-desc">Number of downloads actively streaming simultaneously</div>
         </div>
+        <input type="number" id="settingMaxConcurrent" class="settings-input" min="1" max="10" value="3" style="width: 55px;" />
+      </div>
+
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Automatic Categorization</div>
+          <div class="settings-desc">Organize files by type (Videos, Documents, Archives)</div>
+        </div>
+        <input type="checkbox" id="settingAutoCategorize" checked />
+      </div>
+
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Category Subfolders</div>
+          <div class="settings-desc">Save into MyDM/&lt;Category&gt;/filename</div>
+        </div>
+        <input type="checkbox" id="settingCategoryFolders" checked />
+      </div>
+
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">File Conflict Action</div>
+          <div class="settings-desc">What to do if file already exists in folder</div>
+        </div>
+        <select id="settingConflictAction" class="settings-input">
+          <option value="uniquify">Rename (add number)</option>
+          <option value="overwrite">Overwrite existing</option>
+          <option value="prompt">Prompt location</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Auto-Retry on Network Failure</div>
+          <div class="settings-desc">Max retry attempts with exponential backoff</div>
+        </div>
+        <input type="number" id="settingMaxRetries" class="settings-input" min="0" max="10" value="3" style="width: 55px;" />
+      </div>
     </div>
 
-    <div class="input-section">
-        <div class="input-group">
-            <input type="text" id="linkInput" placeholder="Paste download link here...">
-            <button id="btnDownload" class="btn-primary">Download</button>
-        </div>
-        <div style="display: flex; gap: 8px;">
-            <button id="btnPaste" class="btn-secondary">📋 Paste from Clipboard</button>
-        </div>
+    <div style="text-align: right;">
+      <button id="btnSaveSettings" class="btn-action btn-primary">Save Settings</button>
     </div>
+  </section>
 
-    <div class="container" id="downloadsContainer">
-        <div class="empty-state">
-            <div class="empty-state-icon">📁</div>
-            <p>No active downloads</p>
-            <p style="font-size: 13px; opacity: 0.9;">Right-click any file to download with MyDM</p>
-        </div>
-    </div>
+  <!-- Footer -->
+  <footer class="footer">
+    <span>MyDM v2.0 • Browser-Native Engine</span>
+    <span id="labelLastUpdated">Ready</span>
+  </footer>
 
-    <div class="footer">
-        Last updated: <span id="lastUpdated">Just now</span>
-    </div>
-
-    <script src="popup.js"></script>
+  <script src="engine/speed_tracker.js"></script>
+  <script src="popup.js"></script>
 </body>
-
 </html>

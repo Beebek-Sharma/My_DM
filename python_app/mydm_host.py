@@ -23,22 +23,31 @@ from downloader import DownloadManager, StreamingDownloadManager
 class NativeMessagingHost:
     """Handles native messaging protocol with Chrome extension"""
 
-    def __init__(self):
+    def __init__(self, stdin=None, stdout=None, downloads_dir=None):
         """Initialize the native messaging host"""
         # Use user's Downloads folder by default
-        downloads_dir = str(Path.home() / 'Downloads')
+        target_dir = downloads_dir or str(Path.home() / 'Downloads')
         
+        # Streams for native messaging (allows DI for testing)
+        self.stdin = stdin if stdin is not None else getattr(sys.stdin, 'buffer', sys.stdin)
+        self.stdout = stdout if stdout is not None else getattr(sys.stdout, 'buffer', sys.stdout)
+
         # Create download managers
         self.download_manager = DownloadManager(
-            download_dir=downloads_dir,
+            download_dir=target_dir,
             num_threads=8
         )
         self.streaming_manager = StreamingDownloadManager(
-            download_dir=downloads_dir
+            download_dir=target_dir
         )
 
         # Track active downloads
         self.active_downloads = {}  # Maps download_id to manager type
+        self.streaming_outputs = {}  # Maps download_id to completed file_path
+        self.downloads_dir = target_dir
+        
+        # Lock for thread-safe native messaging stdout writes
+        self.send_lock = threading.Lock()
         
         # Track message queue for threading
         self.running = True
@@ -53,15 +62,15 @@ class NativeMessagingHost:
         """
         try:
             # Read the message length (first 4 bytes, little-endian)
-            length_bytes = sys.stdin.buffer.read(4)
+            length_bytes = self.stdin.read(4)
             if not length_bytes or len(length_bytes) != 4:
                 return None
 
             message_length = struct.unpack('<I', length_bytes)[0]
 
             # Read the message content
-            message_data = sys.stdin.buffer.read(message_length)
-            if not message_data:
+            message_data = self.stdin.read(message_length)
+            if not message_data or len(message_data) != message_length:
                 return None
 
             # Parse JSON
@@ -76,6 +85,7 @@ class NativeMessagingHost:
         """
         Send a message to stdout (Chrome's native messaging protocol)
         Format: [4-byte length][JSON payload]
+        Thread-safe atomic write to avoid corrupting protocol framing.
         
         Args:
             message: Dictionary to send as JSON
@@ -85,11 +95,9 @@ class NativeMessagingHost:
             message_bytes = message_json.encode('utf-8')
             message_length = struct.pack('<I', len(message_bytes))
 
-            # Write length + message
-            sys.stdout.buffer.write(message_length)
-            sys.stdout.buffer.flush()
-            sys.stdout.buffer.write(message_bytes)
-            sys.stdout.buffer.flush()
+            with self.send_lock:
+                self.stdout.write(message_length + message_bytes)
+                self.stdout.flush()
 
         except Exception as e:
             self.log(f"Error sending message: {str(e)}")
@@ -129,6 +137,8 @@ class NativeMessagingHost:
 
     def on_complete(self, download_id, filename, file_path):
         """Callback for download completion"""
+        if download_id:
+            self.streaming_outputs[download_id] = file_path
         message = {
             'event': 'complete',
             'id': download_id,
@@ -137,7 +147,7 @@ class NativeMessagingHost:
             'percent': 100
         }
         self.send_message(message)
-        self.log(f"Complete: {filename}")
+        self.log(f"Complete: {filename} -> {file_path}")
 
     def on_error(self, download_id, error_message):
         """Callback for download errors"""
@@ -163,7 +173,7 @@ class NativeMessagingHost:
             # Detect streaming sites and route to yt-dlp
             if StreamingDownloadManager.is_streaming_site(url):
                 self.log("Detected streaming site - using yt-dlp")
-                download_id = hashlib.md5(url.encode()).hexdigest()[:12]
+                download_id = message.get('id') or hashlib.md5(url.encode()).hexdigest()[:12]
                 self.active_downloads[download_id] = 'streaming'
                 self.send_message({'event': 'started', 'id': download_id})
 
@@ -173,7 +183,8 @@ class NativeMessagingHost:
                             url=url,
                             on_progress=self.on_progress,
                             on_complete=self.on_complete,
-                            on_error=self.on_error
+                            on_error=self.on_error,
+                            download_id=download_id
                         )
                     except Exception as e:
                         self.on_error(download_id, str(e))
@@ -274,6 +285,67 @@ class NativeMessagingHost:
                 'error': str(e)
             })
 
+    def _resolve_file_path(self, message):
+        """Helper to resolve file path from message or download ID"""
+        file_path = message.get('path')
+        download_id = message.get('id')
+        if not file_path:
+            if download_id and download_id in self.streaming_outputs:
+                file_path = self.streaming_outputs[download_id]
+            elif download_id and download_id in self.download_manager.downloads:
+                file_path = self.download_manager.downloads[download_id].get('output_file')
+
+        if file_path and not os.path.isabs(file_path):
+            candidate = os.path.join(self.downloads_dir, file_path)
+            if os.path.exists(candidate):
+                file_path = candidate
+            else:
+                # Also check without folder prefixes
+                base_name = os.path.basename(file_path)
+                base_candidate = os.path.join(self.downloads_dir, base_name)
+                if os.path.exists(base_candidate):
+                    file_path = base_candidate
+
+        return file_path
+
+    def handle_show_in_folder(self, message):
+        """Handle request to reveal downloaded file in Windows Explorer"""
+        file_path = self._resolve_file_path(message)
+        norm = os.path.normpath(file_path) if file_path else None
+        
+        try:
+            import subprocess
+            if norm and os.path.exists(norm):
+                # Critical on Windows: /select, must NOT be enclosed in quotes on command line!
+                subprocess.Popen(f'explorer.exe /select,"{norm}"')
+                self.log(f"Revealed in folder: {norm}")
+            elif norm and os.path.exists(os.path.dirname(norm)):
+                subprocess.Popen(f'explorer.exe "{os.path.dirname(norm)}"')
+                self.log(f"Opened parent directory: {os.path.dirname(norm)}")
+            else:
+                # Fallback to Downloads directory (never Documents!)
+                subprocess.Popen(f'explorer.exe "{self.downloads_dir}"')
+                self.log(f"Fallback opened downloads folder: {self.downloads_dir}")
+        except Exception as e:
+            self.log(f"Error revealing in folder: {str(e)}")
+
+    def handle_open_file(self, message):
+        """Handle request to open / play downloaded file with default system application"""
+        file_path = self._resolve_file_path(message)
+        norm = os.path.normpath(file_path) if file_path else None
+
+        if norm and os.path.exists(norm):
+            try:
+                os.startfile(norm)
+                self.log(f"Opened file with default app: {norm}")
+                self.send_message({'event': 'opened', 'id': message.get('id'), 'file': norm})
+            except Exception as e:
+                self.log(f"Error opening file: {str(e)}")
+                self.send_message({'event': 'error', 'id': message.get('id'), 'error': f"Failed to open file: {str(e)}"})
+        else:
+            self.log(f"File not found to open: {norm}")
+            self.send_message({'event': 'error', 'id': message.get('id'), 'error': f"File not found: {norm}"})
+
     def run(self):
         """Main message loop"""
         self.log("MyDM Native Host Started")
@@ -299,6 +371,10 @@ class NativeMessagingHost:
                     self.handle_resume_command(message)
                 elif command == 'cancel':
                     self.handle_cancel_command(message)
+                elif command == 'show_in_folder':
+                    self.handle_show_in_folder(message)
+                elif command in ('open_file', 'open'):
+                    self.handle_open_file(message)
                 else:
                     self.log(f"Unknown command: {command}")
                     self.send_message({

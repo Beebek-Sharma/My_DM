@@ -22,12 +22,17 @@ from urllib.parse import urlparse
 
 def sanitize_filename(name: str) -> str:
     try:
+        if not name:
+            return 'download'
         invalid = set('<>:"/\\|?*')
-        safe = ''.join('_' if c in invalid else c for c in name)
+        safe = ''.join('_' if c in invalid else c for c in str(name))
         safe = re.sub(r'[\x00-\x1f]', '', safe)
         safe = safe.strip().rstrip('. ')
         if not safe:
             safe = 'download'
+        base_name = safe.split('.')[0]
+        if base_name.upper() in {'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'}:
+            safe = f"_{safe}"
         if len(safe) > 150:
             base, ext = os.path.splitext(safe)
             safe = (base[:150 - len(ext)]) + ext
@@ -108,6 +113,17 @@ class StreamingDownloadManager:
             return [sys.executable, '-m', 'yt_dlp']
         return ['yt-dlp']
 
+    def _find_ffmpeg(self):
+        """Locate ffmpeg binary via imageio_ffmpeg or system PATH"""
+        try:
+            import imageio_ffmpeg
+            exe = imageio_ffmpeg.get_ffmpeg_exe()
+            if exe and os.path.exists(exe):
+                return exe
+        except Exception:
+            pass
+        return None
+
     def _find_cookie_file(self):
         """Look for exported cookies.txt in common locations (Downloads and app directory)."""
         candidates = []
@@ -178,9 +194,9 @@ class StreamingDownloadManager:
         except Exception:
             return False
 
-    def download(self, url, on_progress=None, on_complete=None, on_error=None):
+    def download(self, url, on_progress=None, on_complete=None, on_error=None, download_id=None):
         """Download from streaming site using yt-dlp with cookie fallbacks"""
-        download_id = hashlib.md5(url.encode()).hexdigest()[:12]
+        download_id = download_id or hashlib.md5(url.encode()).hexdigest()[:12]
         
         # Check yt-dlp availability (lazy check)
         if not self._check_yt_dlp():
@@ -201,12 +217,13 @@ class StreamingDownloadManager:
                 '--newline',
                 '--no-playlist',  # Force single video extraction (prevents downloading whole playlists)
                 '--socket-timeout', '30',  # 30 second socket timeout
-                '--extractor-args', 'youtube:player_client=web',  # Use web client to bypass age-gate
-                '--extractor-args', 'youtube:skip=dash,hls',  # Skip problematic formats
-                '-f', 'b[ext=mp4]/best[ext=mp4]/best',  # Flexible format selection
+                '-f', 'bestvideo*+bestaudio/best',  # Flexible format selection with auto fallback
                 '--skip-unavailable-fragments',  # Skip unavailable fragments
                 '-o', str(self.download_dir / '%(title)s.%(ext)s')
             ]
+            ffmpeg_exe = self._find_ffmpeg()
+            if ffmpeg_exe:
+                base.extend(['--ffmpeg-location', ffmpeg_exe])
             if cookies_arg:
                 base.extend(['--cookies-from-browser', cookies_arg])
             base.append(url)
@@ -448,8 +465,8 @@ class StreamingDownloadManager:
     def _parse_size(self, size_str):
         """Parse size string like '10.5MiB' to bytes"""
         try:
-            # Extract number and unit
-            match = re.match(r'(\d+(?:\.\d+)?)([KMGT]?i?B)', size_str.upper())
+            # Extract number and unit (case-insensitive)
+            match = re.match(r'(\d+(?:\.\d+)?)\s*([KMGT]?I?B)', size_str.upper())
             if not match:
                 return 0
 
@@ -539,10 +556,15 @@ class DownloadManager:
             # Get filename
             filename = 'download'
             if 'content-disposition' in response.headers:
-                # Extract filename from Content-Disposition header
                 content_disp = response.headers['content-disposition']
-                if 'filename=' in content_disp:
-                    filename = content_disp.split('filename=')[1].strip('"\'')
+                fn_star = re.search(r"filename\*\s*=\s*(?:UTF-8''|utf-8'')([^;\s]+)", content_disp, re.IGNORECASE)
+                if fn_star:
+                    from urllib.parse import unquote
+                    filename = unquote(fn_star.group(1)).strip('"\' ')
+                else:
+                    fn_match = re.search(r'filename\s*=\s*("([^"]+)"|([^;\s]+))', content_disp, re.IGNORECASE)
+                    if fn_match:
+                        filename = (fn_match.group(2) or fn_match.group(3) or 'download').strip('"\' ')
             else:
                 # Extract from URL
                 filename = url.split('/')[-1].split('?')[0] or 'download'
@@ -565,7 +587,7 @@ class DownloadManager:
         except Exception as e:
             raise Exception(f"Failed to get file info: {str(e)}")
 
-    def download_segment(self, url, start_byte, end_byte, segment_num, output_file, referer=None):
+    def download_segment(self, url, start_byte, end_byte, segment_num, output_file, referer=None, download_id=None):
         """
         Download a segment of the file
         
@@ -576,6 +598,7 @@ class DownloadManager:
             segment_num: Segment number
             output_file: Path to output file
             referer: Referer header (optional)
+            download_id: ID of the download (optional, for pause/cancel tracking)
             
         Returns:
             dict: {bytes_downloaded, success, error}
@@ -601,6 +624,19 @@ class DownloadManager:
 
             with open(segment_file, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
+                    if download_id:
+                        while True:
+                            with self.lock:
+                                dl = self.downloads.get(download_id)
+                                if dl:
+                                    if dl.get('cancelled'):
+                                        raise Exception("Download cancelled")
+                                    if not dl.get('paused'):
+                                        break
+                                else:
+                                    break
+                            time.sleep(0.1)
+
                     if chunk:
                         f.write(chunk)
                         bytes_downloaded += len(chunk)
@@ -723,9 +759,10 @@ class DownloadManager:
         """Execute the actual download (called in thread)"""
         try:
             file_size = file_info['size']
+            resumable = file_info.get('resumable', False)
             
-            # If file size is 0 or very small, download as single segment
-            if file_size < 1024 * 1024:  # Less than 1MB
+            # If file size is 0 or very small, or server doesn't support range requests, download as single segment
+            if file_size < 1024 * 1024 or not resumable:
                 self._download_single_segment(
                     download_id, url, referer, output_file, on_progress
                 )
@@ -774,12 +811,18 @@ class DownloadManager:
 
             with open(output_file, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
-                    # Check for pause/cancel
-                    with self.lock:
-                        if self.downloads[download_id]['cancelled']:
-                            raise Exception("Download cancelled")
-                        while self.downloads[download_id]['paused']:
-                            time.sleep(0.1)
+                    # Check for pause/cancel without holding lock during sleep
+                    while True:
+                        with self.lock:
+                            dl = self.downloads.get(download_id)
+                            if dl:
+                                if dl.get('cancelled'):
+                                    raise Exception("Download cancelled")
+                                if not dl.get('paused'):
+                                    break
+                            else:
+                                break
+                        time.sleep(0.1)
 
                     if chunk:
                         f.write(chunk)
@@ -792,7 +835,7 @@ class DownloadManager:
                             speed = self._calculate_speed(download_id, downloaded)
                             on_progress(
                                 download_id,
-                                file_info['filename'] if 'file_info' in locals() else 'file',
+                                os.path.basename(str(output_file)),
                                 percent,
                                 speed,
                                 total_size,
@@ -802,7 +845,8 @@ class DownloadManager:
 
                         # Update downloaded size in state
                         with self.lock:
-                            self.downloads[download_id]['downloaded'] = downloaded
+                            if download_id in self.downloads:
+                                self.downloads[download_id]['downloaded'] = downloaded
 
         except Exception as e:
             raise e
@@ -830,7 +874,7 @@ class DownloadManager:
                 for seg_num, start, end in segments:
                     future = executor.submit(
                         self.download_segment,
-                        url, start, end, seg_num, str(output_file), referer
+                        url, start, end, seg_num, str(output_file), referer, download_id
                     )
                     futures[future] = seg_num
 
