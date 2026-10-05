@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary": "#bcc7de", "tertiary": "#4ee6aa", "surface-dim": "#0d1320", "primary-fixed": "#c4e7ff", "on-tertiary": "#003825", "on-primary-container": "#004965", "on-error-container": "#ffdad6", "inverse-surface": "#dde2f5", "outline": "#87929a", "tertiary-fixed": "#68fcbf", "secondary-fixed-dim": "#bcc7de", "secondary-fixed": "#d8e3fb", "inverse-primary": "#00668a", "outline-variant": "#3e484f", "on-secondary-fixed-variant": "#3c475a", "surface-container": "#1a1f2d", "on-secondary": "#263143", "on-tertiary-container": "#004e35", "background": "#0d1320", "error": "#ffb4ab", "surface-container-low": "#161b29", "primary": "#8ed5ff", "on-secondary-fixed": "#111c2d", "surface-container-highest": "#2f3543", "tertiary-container": "#22c990", "inverse-on-surface": "#2a303f", "primary-container": "#38bdf8", "surface-bright": "#333948", "secondary-container": "#3e495d", "surface": "#0d1320", "surface-container-lowest": "#080e1b", "on-primary": "#00354a", "surface-tint": "#7bd0ff", "on-tertiary-fixed": "#002114", "error-container": "#93000a", "on-surface": "#dde2f5", "on-background": "#dde2f5", "on-tertiary-fixed-variant": "#005137", "on-primary-fixed-variant": "#004c69", "surface-variant": "#2f3543", "on-secondary-container": "#aeb9d0", "primary-fixed-dim": "#7bd0ff", "on-error": "#690005", "on-primary-fixed": "#001e2c", "on-surface-variant": "#bdc8d1", "surface-container-high": "#242a38", "tertiary-fixed-dim": "#45dfa4" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-lg": "0.75rem", "gutter": "0.75rem", "space-sm": "0.375rem", "space-xs": "0.25rem", "margin": "1rem", "space-md": "0.5rem", "space-xl": "1rem" }, "fontFamily": { "label-lg": ["Inter"], "label-md": ["Inter"], "body-sm": ["Inter"], "caption": ["Inter"], "headline-lg": ["Inter"], "label-sm": ["Inter"], "body-lg": ["Inter"], "headline-sm": ["Inter"], "headline-md": ["Inter"], "body-md": ["Inter"] }, "fontSize": { "label-lg": ["12px", { "lineHeight": "16px", "letterSpacing": "0px", "fontWeight": "600" }], "label-md": ["11px", { "lineHeight": "14px", "letterSpacing": "0px", "fontWeight": "600" }], "body-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0px", "fontWeight": "400" }], "caption": ["10px", { "lineHeight": "14px", "letterSpacing": "0px", "fontWeight": "400" }], "headline-lg": ["16px", { "lineHeight": "20px", "letterSpacing": "-0.3px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "12px", "letterSpacing": "0.3px", "fontWeight": "700" }], "body-lg": ["13px", { "lineHeight": "18px", "letterSpacing": "0px", "fontWeight": "400" }], "headline-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0px", "fontWeight": "600" }], "headline-md": ["14px", { "lineHeight": "18px", "letterSpacing": "-0.2px", "fontWeight": "600" }], "body-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0px", "fontWeight": "400" }] } } } };</script><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0d1320;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:4px;}::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2);}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 pt-safe bg-surface-container-low/85 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.35)]"><div class="h-28 flex flex-col justify-between px-margin py-space-sm"><div class="flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0"><img alt="MyDM Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1Us0uMln2zZ8p6h8dct5YjB6BZH2vDlTGWPZr1J8Pxp7SAgEq3Moa79WyMExVcThrZRRBqGL7znjEWXzIpWx2Cu7aKOpqjJmRhuMWmj0iepqOcvUwCDtzmsVeb3VesNo4ndZA8LVsCFIQa_zKTmsyJ61AGBBsgzG0bKSnxokFwykF_RiIgBVpx6SL1wMeXIIL72X2CmL3m4bCYJoIG09XE3d0_CbsoAMlpIQOxQ-5aDmbxZq3gEoN6ZvTZM"/><div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-on-surface truncate">MyDM</span><span class="font-label-sm text-label-sm bg-surface-container-highest text-primary px-1.5 py-0.5 rounded">v2.4 Pro</span></div><div class="flex items-center gap-1.5 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span><span class="font-caption text-caption text-tertiary uppercase tracking-wider">Engine Active</span></div></div></div><div class="flex items-center gap-space-xs"><a class="w-11 h-11 flex items-center justify-center rounded-lg bg-surface-container text-on-surface-variant hover:text-primary transition-colors" data-path="settings-preferences" href="#" title="Engine Settings"><span class="material-symbols-outlined text-[19px]">settings</span></a><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div><nav class="flex items-center justify-between gap-space-xs bg-surface-container-lowest/60 p-1 rounded-lg backdrop-blur-md" data-active-classes="bg-surface-container-high text-primary shadow-[0_0_12px_rgba(56,189,248,0.2)]"><a class="flex-1 h-8 flex items-center justify-center rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all px-2" data-path="all-downloads" href="#"><span>All</span></a><a class="flex-1 h-8 flex items-center justify-center gap-1 rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all px-2" data-path="active-downloads" href="#"><span>Active</span><span class="px-1 rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm leading-none py-0.5">2</span></a><a class="flex-1 h-8 flex items-center justify-center rounded-md font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all px-2" data-path="completed-downloads" href="#"><span>Completed</span></a><a aria-current="page" class="flex-1 h-8 flex items-center justify-center gap-1 rounded-md font-label-md transition-all px-2 bg-surface-container-high text-primary shadow-[0_0_12px_rgba(56,189,248,0.2)]" data-path="media-sniffer" href="#"><span>Sniffer</span><span class="w-2 h-2 rounded-full bg-tertiary"></span></a></nav></div></header><main class="flex-1 flex flex-col relative w-full pt-28 pb-14 bg-surface px-margin"><div class="flex flex-col w-full pb-6 space-y-space-md">
+<!-- Active Tab Inspector Banner -->
+<div class="bg-surface-container-low rounded-xl p-space-md shadow-sm relative overflow-hidden">
+<div class="absolute -right-10 -top-10 w-28 h-28 bg-primary/10 rounded-full blur-2xl pointer-events-none"></div>
+<div class="flex items-center justify-between gap-space-sm mb-space-xs">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-primary text-[16px] animate-pulse">radar</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Active Inspector</span>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/15 text-primary shadow-[0_0_12px_rgba(56,189,248,0.25)]">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+<span class="font-label-sm text-label-sm font-bold">5 streams captured</span>
+</div>
+</div>
+<div class="flex items-center justify-between gap-space-sm bg-surface-container-lowest/80 rounded-lg px-2.5 py-1.5 mb-space-sm">
+<div class="flex items-center gap-1.5 min-w-0">
+<span class="material-symbols-outlined text-on-surface-variant text-[15px] shrink-0">link</span>
+<span class="font-body-sm text-body-sm text-on-surface truncate select-all">youtube.com/watch?v=dQw4w9WgXcQ</span>
+</div>
+<span class="font-caption text-caption text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded shrink-0">TLS Encrypted</span>
+</div>
+<!-- Telemetry Toggles and Quick Actions -->
+<div class="flex items-center justify-between pt-space-xs">
+<div class="flex items-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" id="auto-capture-toggle" type="checkbox"/>
+<div class="w-8 h-4.5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3.5 peer-checked:after:bg-on-primary peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface-variant after:rounded-full after:h-3.5 after:w-3.5 after:transition-all"></div>
+<span class="ml-2 font-caption text-caption text-on-surface-variant font-medium select-none">Auto Capture</span>
+</label>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface transition-all active:scale-95" id="resniff-btn">
+<span class="material-symbols-outlined text-[14px] text-primary transition-transform" id="resniff-icon">autorenew</span>
+<span class="font-label-sm text-label-sm">Re-Sniff Tab</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Filter & Stream Categories Bar -->
+<div class="flex items-center justify-between gap-space-xs px-0.5">
+<div class="flex items-center gap-1.5">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Detected Streams</span>
+<span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface px-1.5 py-0.2 rounded-full">4 Assets</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="px-2 py-0.5 rounded font-caption text-caption bg-primary-container text-on-primary font-semibold">All</button>
+<button class="px-2 py-0.5 rounded font-caption text-caption bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors">Video (2)</button>
+<button class="px-2 py-0.5 rounded font-caption text-caption bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors">Audio (1)</button>
+<button class="px-2 py-0.5 rounded font-caption text-caption bg-surface-container hover:bg-surface-container-high text-on-surface-variant transition-colors">Subs (1)</button>
+</div>
+</div>
+<!-- Streams List Container -->
+<div class="flex flex-col gap-space-sm" id="stream-list">
+<!-- Card 1: 4K Master Video (Featured Stream) -->
+<div class="relative flex flex-col bg-surface-container rounded-xl p-3 shadow-md hover:shadow-lg transition-all group overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="flex items-start justify-between gap-2 min-w-0 pl-1">
+<div class="flex items-start gap-2.5 min-w-0">
+<input checked="" class="mt-1 w-4 h-4 rounded bg-surface-container-highest accent-primary cursor-pointer shrink-0" type="checkbox"/>
+<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[18px]">smart_display</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate max-w-[210px]">Main 4K Video Stream (H.264 / AVC)</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded-full bg-primary/20 text-primary uppercase font-bold tracking-wide">Ultra HD</span>
+</div>
+<div class="flex items-center gap-1.5 mt-0.5 flex-wrap text-on-surface-variant font-caption text-caption">
+<span class="font-semibold text-on-surface">2160p 60fps</span>
+<span>•</span>
+<span>1.42 GB</span>
+<span>•</span>
+<span class="bg-surface-container-highest px-1 rounded text-primary">.mp4</span>
+<span>•</span>
+<span class="text-tertiary">Direct Manifest</span>
+</div>
+</div>
+</div>
+<div class="relative shrink-0">
+<select class="bg-surface-container-highest text-primary font-label-sm text-label-sm px-2 py-1 rounded-md appearance-none pr-5 focus:outline-none cursor-pointer">
+<option value="4k">2160p (4K)</option>
+<option value="1440p">1440p (2K)</option>
+<option value="1080p">1080p</option>
+</select>
+<span class="material-symbols-outlined absolute right-1 top-1.5 text-[12px] text-primary pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="flex items-center justify-between pl-8 pt-2.5 mt-2 bg-surface-container-lowest/50 rounded-lg px-2.5 py-1.5">
+<div class="flex items-center gap-1 text-on-surface-variant font-caption text-caption">
+<span class="material-symbols-outlined text-[13px] text-tertiary">check_circle</span>
+<span>Adaptive Multi-chunk Ready (8 Segments)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="w-6 h-6 flex items-center justify-center rounded bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-primary transition-colors" title="Copy Link">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+</button>
+<button class="h-6 px-2.5 rounded bg-primary text-on-primary hover:bg-primary-container font-label-sm text-label-sm font-semibold flex items-center gap-1 transition-all active:scale-95 shadow-[0_0_8px_rgba(56,189,248,0.3)]">
+<span class="material-symbols-outlined text-[13px]">download</span>
+<span>Download Video</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2: 1080p VP9 WebM Stream -->
+<div class="relative flex flex-col bg-surface-container rounded-xl p-3 shadow-md hover:shadow-lg transition-all group overflow-hidden">
+<div class="flex items-start justify-between gap-2 min-w-0 pl-1">
+<div class="flex items-start gap-2.5 min-w-0">
+<input checked="" class="mt-1 w-4 h-4 rounded bg-surface-container-highest accent-primary cursor-pointer shrink-0" type="checkbox"/>
+<div class="w-8 h-8 rounded-lg bg-secondary-container/50 flex items-center justify-center text-primary-fixed-dim shrink-0">
+<span class="material-symbols-outlined text-[18px]">movie</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate max-w-[230px]">Full HD 1080p Stream (VP9)</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-semibold">1080p</span>
+</div>
+<div class="flex items-center gap-1.5 mt-0.5 flex-wrap text-on-surface-variant font-caption text-caption">
+<span class="font-medium text-on-surface">1080p 60fps</span>
+<span>•</span>
+<span>480 MB</span>
+<span>•</span>
+<span class="bg-surface-container-highest px-1 rounded text-on-surface">.webm</span>
+<span>•</span>
+<span>DASH Protocol</span>
+</div>
+</div>
+</div>
+<button class="h-7 px-2.5 rounded-lg bg-surface-container-highest hover:bg-primary hover:text-on-primary text-on-surface font-label-sm text-label-sm font-semibold flex items-center gap-1 transition-all active:scale-95 shrink-0">
+<span class="material-symbols-outlined text-[14px]">download</span>
+<span>Download</span>
+</button>
+</div>
+</div>
+<!-- Card 3: Master Audio Track (Opus) -->
+<div class="relative flex flex-col bg-surface-container rounded-xl p-3 shadow-md hover:shadow-lg transition-all group overflow-hidden">
+<div class="flex items-start justify-between gap-2 min-w-0 pl-1">
+<div class="flex items-start gap-2.5 min-w-0">
+<input checked="" class="mt-1 w-4 h-4 rounded bg-surface-container-highest accent-primary cursor-pointer shrink-0" type="checkbox"/>
+<div class="w-8 h-8 rounded-lg bg-tertiary-container/20 flex items-center justify-center text-tertiary shrink-0">
+<span class="material-symbols-outlined text-[18px]">audiotrack</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate max-w-[210px]">Master Audio Track (Opus 160kbps)</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded-full bg-tertiary/15 text-tertiary font-semibold uppercase">HQ Audio</span>
+</div>
+<div class="flex items-center gap-1.5 mt-0.5 flex-wrap text-on-surface-variant font-caption text-caption">
+<span>48 kHz Stereo</span>
+<span>•</span>
+<span>34 MB</span>
+<span>•</span>
+<span class="bg-surface-container-highest px-1 rounded text-on-surface">.m4a</span>
+<span>•</span>
+<span>Lossless Pass</span>
+</div>
+</div>
+</div>
+<button class="h-7 px-2.5 rounded-lg bg-surface-container-highest hover:bg-tertiary hover:text-on-tertiary text-on-surface font-label-sm text-label-sm font-semibold flex items-center gap-1 transition-all active:scale-95 shrink-0">
+<span class="material-symbols-outlined text-[14px]">music_note</span>
+<span>Extract Audio</span>
+</button>
+</div>
+</div>
+<!-- Card 4: Subtitles Asset (VTT) -->
+<div class="relative flex flex-col bg-surface-container rounded-xl p-3 shadow-md hover:shadow-lg transition-all group overflow-hidden">
+<div class="flex items-start justify-between gap-2 min-w-0 pl-1">
+<div class="flex items-start gap-2.5 min-w-0">
+<input class="mt-1 w-4 h-4 rounded bg-surface-container-highest accent-primary cursor-pointer shrink-0" type="checkbox"/>
+<div class="w-8 h-8 rounded-lg bg-secondary-container/30 flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[18px]">subtitles</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface truncate max-w-[210px]">Embedded Subtitles (English Auto-sync)</span>
+<span class="font-label-sm text-label-sm px-1.5 py-0.5 rounded-full bg-surface-container-highest text-secondary font-semibold">Captions</span>
+</div>
+<div class="flex items-center gap-1.5 mt-0.5 flex-wrap text-on-surface-variant font-caption text-caption">
+<span>English [CC]</span>
+<span>•</span>
+<span>42 KB</span>
+<span>•</span>
+<span class="bg-surface-container-highest px-1 rounded text-on-surface">.vtt</span>
+<span>•</span>
+<span>UTF-8 Timed</span>
+</div>
+</div>
+</div>
+<button class="h-7 px-2.5 rounded-lg bg-surface-container-highest hover:bg-surface-bright text-on-surface font-label-sm text-label-sm font-semibold flex items-center gap-1 transition-all active:scale-95 shrink-0">
+<span class="material-symbols-outlined text-[14px]">save</span>
+<span>Save Subtitles</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Tactical Batch Action Strip -->
+<div class="mt-2 p-2.5 rounded-xl bg-surface-container-high/90 backdrop-blur-md flex items-center justify-between gap-2 shadow-lg">
+<div class="flex items-center gap-2 min-w-0">
+<div class="w-7 h-7 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[16px]">checklist</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-bold truncate">Queue Selection</span>
+<span class="font-caption text-caption text-on-surface-variant truncate">3 files ready (1.93 GB total)</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5 shrink-0">
+<button class="h-8 px-2.5 rounded-lg bg-surface-container hover:bg-surface-bright text-on-surface font-label-md text-label-md transition-colors flex items-center gap-1" id="copy-m3u8-btn">
+<span class="material-symbols-outlined text-[15px] text-on-surface-variant">share</span>
+<span>Copy Links</span>
+</button>
+<button class="h-8 px-3 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-bold flex items-center gap-1.5 shadow-[0_0_12px_rgba(56,189,248,0.35)] transition-all active:scale-95">
+<span class="material-symbols-outlined text-[16px]">download_for_offline</span>
+<span>Download (3)</span>
+</button>
+</div>
+</div>
+<!-- Toast Notification Overlay for interactive actions -->
+<div class="opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-2 rounded-lg bg-surface-bright text-on-surface font-label-sm text-label-sm shadow-xl text-center" id="sniffer-toast">
+<span class="material-symbols-outlined text-tertiary text-[16px] mr-1.5">check_circle</span>
+<span id="toast-msg">Copied manifests to clipboard</span>
+</div>
+</div>
+<script>
+  (function() {
+    const resniffBtn = document.getElementById('resniff-btn');
+    const resniffIcon = document.getElementById('resniff-icon');
+    const copyBtn = document.getElementById('copy-m3u8-btn');
+    const toast = document.getElementById('sniffer-toast');
+    const toastMsg = document.getElementById('toast-msg');
+
+    function showToast(text) {
+      if (!toast || !toastMsg) return;
+      toastMsg.textContent = text;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2200);
+    }
+
+    if (resniffBtn && resniffIcon) {
+      resniffBtn.addEventListener('click', () => {
+        resniffIcon.classList.add('animate-spin');
+        showToast('Scanning network streams on active tab...');
+        setTimeout(() => {
+          resniffIcon.classList.remove('animate-spin');
+          showToast('Updated! 5 active streams confirmed.');
+        }, 1100);
+      });
+    }
+
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard?.writeText([
+          'https://googlevideo.com/videoplayback?itag=313&id=dQw4w9WgXcQ.mp4',
+          'https://googlevideo.com/videoplayback?itag=248&id=dQw4w9WgXcQ.webm',
+          'https://googlevideo.com/videoplayback?itag=251&id=dQw4w9WgXcQ.m4a'
+        ].join('\n'));
+        showToast('Copied 3 stream manifest URLs to clipboard');
+      });
+    }
+  })();
+</script></main><footer class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-low/90 backdrop-blur-xl shadow-[0_-4px_16px_rgba(0,0,0,0.4)]"><div class="h-14 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm min-w-0"><div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary"><span class="material-symbols-outlined text-[18px]">downloading</span></div><div class="flex flex-col min-w-0"><span class="font-label-md text-label-md text-primary font-bold truncate">↓ 14.8 MB/s</span><span class="font-caption text-caption text-on-surface-variant truncate">2 active threads • 83% heap</span></div></div><div class="flex items-center gap-space-xs"><button class="h-9 px-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-label-md transition-colors">Clear Done</button><button class="h-9 px-2.5 rounded-lg bg-error-container/40 hover:bg-error-container text-error font-label-md text-label-md transition-colors">Clear All</button></div></div></footer></body></html>

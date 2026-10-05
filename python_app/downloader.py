@@ -16,6 +16,7 @@ from datetime import datetime
 import hashlib
 import subprocess
 import re
+import tempfile
 from urllib.parse import urlparse
 
 # --------- Utilities ---------
@@ -65,6 +66,20 @@ class StreamingDownloadManager:
         
         # yt-dlp availability will be checked lazily when needed
         self.yt_dlp_available = None
+        self.active_processes = {}
+        self.active_processes_lock = threading.Lock()
+
+    def cancel_download(self, download_id):
+        """Cancel an active streaming download process immediately"""
+        with self.active_processes_lock:
+            proc = self.active_processes.pop(download_id, None)
+        if proc:
+            try:
+                proc.kill()
+                return True
+            except Exception:
+                pass
+        return False
 
     def _check_yt_dlp(self):
         """Check if yt-dlp is installed and accessible (lazy check)"""
@@ -86,9 +101,11 @@ class StreamingDownloadManager:
             # Prefer running as a module so we don't depend on PATH.
             result = subprocess.run(
                 [sys.executable, '-m', 'yt_dlp', '--version'],
+                stdin=subprocess.DEVNULL,
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
             if result.returncode == 0:
                 self.yt_dlp_available = True
@@ -98,7 +115,14 @@ class StreamingDownloadManager:
 
         try:
             # Fallback to the yt-dlp executable if present on PATH.
-            result = subprocess.run(['yt-dlp', '--version'], capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                ['yt-dlp', '--version'],
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            )
             if result.returncode == 0:
                 self.yt_dlp_available = True
                 return True
@@ -108,9 +132,9 @@ class StreamingDownloadManager:
 
     def _yt_dlp_cmd(self):
         """Return a command prefix to run yt-dlp reliably."""
-        # If installed in the same environment, `python -m yt_dlp` is the most reliable.
+        # If installed in the same environment, `python -u -m yt_dlp` is the most reliable.
         if self._check_yt_dlp():
-            return [sys.executable, '-m', 'yt_dlp']
+            return [sys.executable, '-u', '-m', 'yt_dlp']
         return ['yt-dlp']
 
     def _find_ffmpeg(self):
@@ -120,6 +144,26 @@ class StreamingDownloadManager:
             exe = imageio_ffmpeg.get_ffmpeg_exe()
             if exe and os.path.exists(exe):
                 return exe
+        except Exception:
+            pass
+        return None
+
+    def _find_node(self):
+        """Locate node.exe binary on system for yt-dlp JavaScript runtime"""
+        try:
+            import shutil
+            exe = shutil.which('node')
+            if exe and os.path.exists(exe):
+                return exe
+            common_paths = [
+                r'C:\Program Files\nodejs\node.exe',
+                r'C:\Program Files (x86)\nodejs\node.exe',
+                os.path.expandvars(r'%LOCALAPPDATA%\Programs\node\node.exe'),
+                os.path.expandvars(r'%APPDATA%\npm\node.exe'),
+            ]
+            for p in common_paths:
+                if os.path.exists(p):
+                    return p
         except Exception:
             pass
         return None
@@ -194,7 +238,347 @@ class StreamingDownloadManager:
         except Exception:
             return False
 
-    def download(self, url, on_progress=None, on_complete=None, on_error=None, download_id=None):
+    def _create_temp_cookie_file(self, url, cookie_header):
+        """Create a temporary Netscape-format cookie file from a Cookie HTTP header string."""
+        if not cookie_header or not isinstance(cookie_header, str):
+            return None
+        try:
+            parsed = urlparse(url)
+            domain = parsed.hostname or ''
+            if not domain:
+                return None
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            cookie_domain = domain if domain.startswith('.') else f".{domain}"
+            lines = ["# Netscape HTTP Cookie File", "# Created by MyDM for authenticated stream extraction"]
+            now = int(time.time()) + 86400 * 30  # 30 days expiry
+
+            for pair in cookie_header.split(';'):
+                pair = pair.strip()
+                if not pair or '=' not in pair:
+                    continue
+                name, val = pair.split('=', 1)
+                name = name.strip()
+                val = val.strip()
+                if name:
+                    lines.append(f"{cookie_domain}\tTRUE\t/\tTRUE\t{now}\t{name}\t{val}")
+
+            tmp = tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', suffix='.txt', delete=False)
+            tmp.write("\n".join(lines) + "\n")
+            tmp.flush()
+            tmp.close()
+            return tmp.name
+        except Exception:
+            return None
+
+    def extract_formats(self, url, cookie_header=None):
+        """
+        Extract available resolutions and formats for a video URL.
+        Returns a dictionary with title, thumbnail, duration, and list of formats.
+        """
+        # Clean YouTube watch URLs that contain &list= when extracting single video info
+        cleaned_url = url
+        try:
+            from urllib.parse import parse_qs, urlencode, urlunparse
+            parsed_u = urlparse(url)
+            u_host = parsed_u.hostname.lower() if parsed_u.hostname else ''
+            if ('youtube.com' in u_host or 'youtu.be' in u_host) and parsed_u.path == '/watch':
+                qs = parse_qs(parsed_u.query)
+                v_param = qs.get('v')
+                if v_param:
+                    new_query = urlencode({'v': v_param[0]})
+                    cleaned_url = urlunparse((parsed_u.scheme, parsed_u.netloc, parsed_u.path, '', new_query, ''))
+        except Exception:
+            cleaned_url = url
+
+        # Fast reject Instagram collection / saved / feed pages (cannot be downloaded as single videos)
+        try:
+            parsed_chk = urlparse(cleaned_url)
+            chk_host = parsed_chk.hostname.lower() if parsed_chk.hostname else ''
+            if 'instagram.com' in chk_host and not any(p in parsed_chk.path for p in ['/p/', '/reel/', '/tv/', '/stories/']):
+                raise ValueError("Instagram collection and feed pages cannot be downloaded directly. Please use 'Media Sniffer' -> 'Scan Page' to select an individual Reel or Post.")
+        except ValueError:
+            raise
+        except Exception:
+            pass
+
+        if not self._check_yt_dlp():
+            raise RuntimeError("yt-dlp is not available")
+
+        temp_cookie_file = self._create_temp_cookie_file(cleaned_url, cookie_header)
+        info = None
+        try:
+            # Fast path: try Python module
+            try:
+                import yt_dlp
+                ydl_opts = {
+                    'quiet': True,
+                    'no_warnings': True,
+                    'skip_download': True,
+                    'extract_flat': False,
+                    'socket_timeout': 15,
+                }
+                ffmpeg_exe = self._find_ffmpeg()
+                if ffmpeg_exe:
+                    ydl_opts['ffmpeg_location'] = ffmpeg_exe
+                if temp_cookie_file:
+                    ydl_opts['cookiefile'] = temp_cookie_file
+
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(cleaned_url, download=False)
+            except Exception:
+                # Subprocess fallback
+                cmd = [*self._yt_dlp_cmd(), '--dump-single-json', '--no-playlist', '--skip-download', '--socket-timeout', '15']
+                ffmpeg_exe = self._find_ffmpeg()
+                if ffmpeg_exe:
+                    cmd.extend(['--ffmpeg-location', ffmpeg_exe])
+                node_exe = self._find_node()
+                if node_exe:
+                    cmd.extend(['--js-runtimes', f'node:{node_exe}'])
+
+                cookie_sources = self._detect_cookie_sources()
+                attempts = [('none', None)]
+                if temp_cookie_file:
+                    attempts.append(('file', temp_cookie_file))
+                for s in cookie_sources:
+                    attempts.append(('browser', s))
+
+                for kind, val in attempts:
+                    try:
+                        c_cmd = list(cmd)
+                        if kind == 'file':
+                            c_cmd.extend(['--cookies', val])
+                        elif kind == 'browser':
+                            c_cmd.extend(['--cookies-from-browser', val])
+                        c_cmd.append(cleaned_url)
+                        res = subprocess.run(
+                            c_cmd,
+                            stdin=subprocess.DEVNULL,
+                            capture_output=True,
+                            text=True,
+                            timeout=20,
+                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                        )
+                        if res.returncode == 0 and res.stdout.strip():
+                            info = json.loads(res.stdout)
+                            break
+                    except Exception:
+                        continue
+        finally:
+            if temp_cookie_file and os.path.exists(temp_cookie_file):
+                try:
+                    os.unlink(temp_cookie_file)
+                except Exception:
+                    pass
+
+        if not info:
+            return {
+                'title': 'Video Stream',
+                'thumbnail': '',
+                'duration': 0,
+                'uploader': '',
+                'formats': [
+                    {
+                        'id': 'best',
+                        'label': 'Best Available Quality (Auto)',
+                        'format_spec': 'bestvideo*+bestaudio/best',
+                        'ext': 'mp4',
+                        'is_audio': False,
+                        'is_default': True
+                    },
+                    {
+                        'id': 'audio_mp3',
+                        'label': '🎵 Audio Only (MP3)',
+                        'format_spec': 'ba/b',
+                        'ext': 'mp3',
+                        'audio_only': True,
+                        'is_audio': True
+                    }
+                ]
+            }
+
+        if 'entries' in info and info['entries']:
+            info = info['entries'][0]
+
+        title = info.get('title') or 'Video Stream'
+        thumbnail = info.get('thumbnail') or ''
+        duration = info.get('duration') or 0
+        uploader = info.get('uploader') or info.get('channel') or ''
+        raw_formats = info.get('formats') or []
+
+        available_heights = set()
+        height_sizes = {}
+        for f in raw_formats:
+            h = f.get('height')
+            if h and isinstance(h, int) and h > 0:
+                available_heights.add(h)
+                sz = f.get('filesize') or f.get('filesize_approx') or 0
+                if sz and (h not in height_sizes or sz > height_sizes[h]):
+                    height_sizes[h] = sz
+
+        STANDARD_TIERS = [
+            (2160, '4K (2160p)'),
+            (1440, '2K (1440p)'),
+            (1080, '1080p (Full HD)'),
+            (720, '720p (HD)'),
+            (480, '480p (SD)'),
+            (360, '360p (Low)'),
+            (240, '240p (Mobile)')
+        ]
+
+        formatted_list = [
+            {
+                'id': 'best',
+                'label': 'Best Available Quality (Auto)',
+                'format_spec': 'bestvideo*+bestaudio/best',
+                'ext': 'mp4',
+                'is_audio': False,
+                'is_default': True
+            }
+        ]
+
+        max_available_height = max(available_heights) if available_heights else 1080
+        for tier_h, tier_label in STANDARD_TIERS:
+            if tier_h <= max_available_height and any(h >= tier_h for h in available_heights):
+                closest_h = min([h for h in available_heights if h >= tier_h], default=tier_h)
+                size_est = height_sizes.get(closest_h, 0)
+                formatted_list.append({
+                    'id': f'res_{tier_h}',
+                    'label': tier_label,
+                    'format_spec': f'bestvideo[height<={tier_h}]+bestaudio/best[height<={tier_h}]/best',
+                    'height': tier_h,
+                    'ext': 'mp4',
+                    'filesize': size_est,
+                    'is_audio': False
+                })
+
+        audio_size = 0
+        for f in raw_formats:
+            if f.get('vcodec') == 'none' and (f.get('filesize') or f.get('filesize_approx')):
+                audio_size = max(audio_size, f.get('filesize') or f.get('filesize_approx') or 0)
+
+        formatted_list.append({
+            'id': 'audio_mp3',
+            'label': '🎵 Audio Only (MP3 - High Quality)',
+            'format_spec': 'ba/b',
+            'ext': 'mp3',
+            'filesize': audio_size,
+            'audio_only': True,
+            'is_audio': True
+        })
+        formatted_list.append({
+            'id': 'audio_m4a',
+            'label': '🎵 Audio Only (M4A / AAC)',
+            'format_spec': 'bestaudio[ext=m4a]/ba',
+            'ext': 'm4a',
+            'filesize': audio_size,
+            'audio_only': True,
+            'is_audio': True
+        })
+
+        return {
+            'title': title,
+            'thumbnail': thumbnail,
+            'duration': duration,
+            'uploader': uploader,
+            'formats': formatted_list
+        }
+
+    def extract_playlist_info(self, url, cookie_header=None):
+        """
+        Extract playlist title, uploader, video count, and list of video entries.
+        Fast extraction using --flat-playlist.
+        """
+        if not self._check_yt_dlp():
+            raise RuntimeError("yt-dlp is not available")
+
+        # Resolve playlist URL
+        playlist_url = url
+        try:
+            from urllib.parse import parse_qs
+            parsed = urlparse(url)
+            qs = parse_qs(parsed.query)
+            list_id = qs.get('list', [None])[0]
+            if list_id:
+                playlist_url = f"https://www.youtube.com/playlist?list={list_id}"
+        except Exception:
+            pass
+
+        temp_cookie_file = self._create_temp_cookie_file(url, cookie_header)
+        try:
+            base_cmd = [
+                *self._yt_dlp_cmd(),
+                '--flat-playlist',
+                '--dump-single-json',
+                '--no-warnings',
+                '--socket-timeout', '25'
+            ]
+            node_exe = self._find_node()
+            if node_exe:
+                base_cmd.extend(['--js-runtimes', f'node:{node_exe}'])
+
+            attempts_pl = [('none', None)]
+            if temp_cookie_file:
+                attempts_pl.append(('file', temp_cookie_file))
+
+            res = None
+            last_err = ''
+            for p_kind, p_val in attempts_pl:
+                cmd = list(base_cmd)
+                if p_kind == 'file':
+                    cmd.extend(['--cookies', p_val])
+                cmd.append(playlist_url)
+
+                res = subprocess.run(
+                    cmd,
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                )
+                if res.returncode == 0 and res.stdout.strip():
+                    break
+                last_err = res.stderr.strip() if res else ''
+
+            if not res or res.returncode != 0 or not res.stdout.strip():
+                raise RuntimeError(last_err or "Failed to extract playlist")
+
+            info = json.loads(res.stdout)
+            raw_entries = info.get('entries') or []
+            entries = []
+            for idx, entry in enumerate(raw_entries):
+                if not entry:
+                    continue
+                v_id = entry.get('id') or ''
+                v_title = entry.get('title') or f"Video {idx + 1}"
+                v_url = entry.get('url') or (f"https://www.youtube.com/watch?v={v_id}" if v_id else '')
+                v_thumb = (entry.get('thumbnails') or [{}])[-1].get('url', '') if entry.get('thumbnails') else (f"https://i.ytimg.com/vi/{v_id}/hqdefault.jpg" if v_id else '')
+                entries.append({
+                    'index': idx + 1,
+                    'id': v_id,
+                    'title': v_title,
+                    'url': v_url,
+                    'duration': entry.get('duration') or 0,
+                    'thumbnail': v_thumb
+                })
+
+            return {
+                'is_playlist': True,
+                'playlist_id': info.get('id') or '',
+                'title': info.get('title') or 'Playlist',
+                'uploader': info.get('uploader') or info.get('channel') or '',
+                'item_count': len(entries),
+                'entries': entries
+            }
+        finally:
+            if temp_cookie_file and os.path.exists(temp_cookie_file):
+                try:
+                    os.unlink(temp_cookie_file)
+                except Exception:
+                    pass
+
+    def download(self, url, on_progress=None, on_complete=None, on_error=None, download_id=None, format_spec=None, audio_only=False, cookie_header=None, output_template=None):
         """Download from streaming site using yt-dlp with cookie fallbacks"""
         download_id = download_id or hashlib.md5(url.encode()).hexdigest()[:12]
         
@@ -209,7 +593,54 @@ class StreamingDownloadManager:
                 on_error(download_id, error_msg)
             return None
 
-        def build_cmd(cookies_arg=None):
+        # Clean YouTube watch URLs that contain &list= when downloading a single video
+        cleaned_url = url
+        try:
+            from urllib.parse import parse_qs, urlencode, urlunparse
+            parsed_u = urlparse(url)
+            u_host = parsed_u.hostname.lower() if parsed_u.hostname else ''
+            if ('youtube.com' in u_host or 'youtu.be' in u_host) and parsed_u.path == '/watch':
+                qs = parse_qs(parsed_u.query)
+                v_param = qs.get('v')
+                if v_param:
+                    new_query = urlencode({'v': v_param[0]})
+                    cleaned_url = urlunparse((parsed_u.scheme, parsed_u.netloc, parsed_u.path, '', new_query, ''))
+        except Exception:
+            cleaned_url = url
+
+        # Check if URL was an Instagram collection/feed
+        try:
+            parsed_chk = urlparse(cleaned_url)
+            chk_host = parsed_chk.hostname.lower() if parsed_chk.hostname else ''
+            if 'instagram.com' in chk_host and not any(p in parsed_chk.path for p in ['/p/', '/reel/', '/tv/', '/stories/']):
+                err_feed = "Instagram collection and feed pages cannot be downloaded directly. Please use 'Media Sniffer' -> 'Scan Page' to select an individual Reel or Post."
+                if on_error:
+                    on_error(download_id, err_feed)
+                return None
+        except Exception:
+            pass
+
+        temp_cookie_file = self._create_temp_cookie_file(cleaned_url, cookie_header)
+
+        # Output path template
+        if output_template:
+            norm_tmpl = str(output_template).replace('\\', '/')
+            if not norm_tmpl.endswith('.%(ext)s'):
+                base_no_ext, _ = os.path.splitext(norm_tmpl)
+                target_tmpl = f"{base_no_ext}.%(ext)s"
+            else:
+                target_tmpl = norm_tmpl
+            out_target = str(self.download_dir / target_tmpl)
+        else:
+            out_target = str(self.download_dir / '%(title)s.%(ext)s')
+
+        try:
+            target_dir = Path(out_target).parent
+            target_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+
+        def build_cmd(cookie_kind=None, cookie_val=None):
             base = [
                 *self._yt_dlp_cmd(),
                 '--no-warnings',
@@ -217,177 +648,77 @@ class StreamingDownloadManager:
                 '--newline',
                 '--no-playlist',  # Force single video extraction (prevents downloading whole playlists)
                 '--socket-timeout', '30',  # 30 second socket timeout
-                '-f', 'bestvideo*+bestaudio/best',  # Flexible format selection with auto fallback
                 '--skip-unavailable-fragments',  # Skip unavailable fragments
-                '-o', str(self.download_dir / '%(title)s.%(ext)s')
+                '--postprocessor-args', 'ffmpeg:-nostdin',
             ]
             ffmpeg_exe = self._find_ffmpeg()
             if ffmpeg_exe:
                 base.extend(['--ffmpeg-location', ffmpeg_exe])
-            if cookies_arg:
-                base.extend(['--cookies-from-browser', cookies_arg])
-            base.append(url)
+
+            node_exe = self._find_node()
+            if node_exe:
+                base.extend(['--js-runtimes', f'node:{node_exe}'])
+
+            if audio_only:
+                base.extend(['-x', '--audio-format', 'mp3', '-f', format_spec or 'ba/b'])
+                base.extend(['-o', out_target])
+            else:
+                fmt = format_spec or 'bestvideo*+bestaudio/best'
+                base.extend(['-f', fmt, '--merge-output-format', 'mp4'])
+                base.extend(['-o', out_target])
+
+            if cookie_kind == 'file':
+                base.extend(['--cookies', cookie_val])
+            elif cookie_kind == 'browser':
+                base.extend(['--cookies-from-browser', cookie_val])
+            base.append(cleaned_url)
             return base
 
         # Try multiple cookie sources then fallback to no cookies
         cookie_sources = self._detect_cookie_sources()
         if not cookie_sources:
             cookie_sources = ['chrome:Default', 'chrome', 'edge:Default', 'edge']
-        # Try without cookies first (fast path), then browser cookies
-        attempts = [None] + cookie_sources
+
+        # Always try without cookies first ('none', None):
+        # 1. YouTube public videos extract cleanly and fast without cookie conflicts or bot challenges.
+        # 2. Chrome 127+ App-Bound Encryption prevents reading DPAPI-encrypted cookies.
+        # 3. If 'none' fails (e.g. age-restricted or private), fall back to temp_cookie_file and browser sources.
+        attempts = [('none', None)]
+        if temp_cookie_file:
+            attempts.append(('file', temp_cookie_file))
+        for s in cookie_sources:
+            attempts.append(('browser', s))
+
         last_error_text = ''
 
-        for attempt_num, cookies in enumerate(attempts):
-            try:
-                cmd = build_cmd(cookies)
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    universal_newlines=True
-                )
-            except Exception as e:
-                last_error_text = str(e)
-                continue
-
-            filename = "video.mp4"  # Default name
-            total_size = 0
-            downloaded_size = 0
-            last_progress_time = 0
-            min_progress_interval = 0.5  # Only report progress every 500ms max
-            recent_output = []
-
-            # Monitor progress (yt-dlp progress is typically written to stderr, so we merge stderr->stdout above)
-            for line in process.stdout:
-                line = line.strip()
-                if not line:
+        try:
+            for attempt_num, (kind, cookies) in enumerate(attempts):
+                try:
+                    cmd = build_cmd(kind, cookies)
+                    process = subprocess.Popen(
+                        cmd,
+                        stdin=subprocess.DEVNULL,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        universal_newlines=True,
+                        bufsize=1,
+                        creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                    )
+                    with self.active_processes_lock:
+                        self.active_processes[download_id] = process
+                except Exception as e:
+                    last_error_text = str(e)
                     continue
 
-                # Keep a short tail for error reporting
-                if len(recent_output) >= 80:
-                    recent_output.pop(0)
-                recent_output.append(line)
-
-                # Extract filename from destination line first
-                if '[download]' in line and 'Destination:' in line:
-                    try:
-                        filename = line.split('Destination:')[1].strip()
-                        filename = filename.split()[0] if filename else "video.mp4"
-                    except:
-                        pass
-
-                # Parse progress information
-                if '[download]' in line and '%' in line:
-                    try:
-                        # Extract percentage
-                        percent_match = re.search(r'(\d+(?:\.\d+)?)%', line)
-                        if percent_match:
-                            percent = float(percent_match.group(1))
-                        else:
-                            percent = 0
-
-                        # Extract size information if available
-                        size_match = re.search(r'of\s+(\d+(?:\.\d+)?[KMGT]i?B)', line)
-                        if size_match:
-                            size_str = size_match.group(1)
-                            total_size = self._parse_size(size_str)
-                            downloaded_size = int((percent / 100) * total_size) if total_size > 0 else 0
-
-                        # Calculate speed
-                        speed = "N/A"
-                        speed_match = re.search(r'at\s+(\d+(?:\.\d+)?\w+/s)', line)
-                        if speed_match:
-                            speed = speed_match.group(1)
-
-                        # Throttle progress updates
-                        current_time = time.time()
-                        if on_progress and (current_time - last_progress_time) >= min_progress_interval:
-                            on_progress(
-                                download_id,
-                                filename,
-                                min(100, max(0, percent)),
-                                speed,
-                                total_size,
-                                downloaded_size
-                            )
-                            last_progress_time = current_time
-                    except Exception as e:
-                        continue  # Skip malformed progress lines
-
-            # Wait for process to complete with timeout
-            try:
-                process.wait(timeout=3600)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                if on_error:
-                    on_error(download_id, "Download timeout - took more than 1 hour")
-                return None
-
-            if process.returncode == 0:
-                time.sleep(1)
-                if on_complete:
-                    output_file = self._find_downloaded_file(filename)
-                    on_complete(download_id, filename, output_file)
-                return download_id
-            else:
-                stderr_output = "\n".join(recent_output[-40:])
-
-                # Log detailed error info
-                cookies_str = f"cookies={cookies}" if cookies else "no-cookies"
-                error_detail = f"Attempt {attempt_num + 1} failed ({cookies_str}): {stderr_output[:200]}"
-                
-                last_error_text = stderr_output or f"Return code {process.returncode}"
-                
-                # If cookie-related error when using a browser cookie source, try next
-                if cookies and (
-                    'cookies database' in last_error_text.lower() or
-                    'dpapi' in last_error_text.lower() or
-                    'cookie' in last_error_text.lower()
-                ):
-                    continue  # try next cookie source
-                # If bot-detection without cookies and we have more sources to try, continue
-                if (not cookies) and ('sign in to confirm you' in last_error_text.lower()):
-                    continue
-                # If age restriction without cookies, try with cookies
-                if (not cookies) and ('age-restricted' in last_error_text.lower() or 'age restricted' in last_error_text.lower()):
-                    continue
-                # If access denied/unavailable, still try cookies before giving up
-                if (not cookies) and ('not available' in last_error_text.lower() or 'access denied' in last_error_text.lower()):
-                    continue
-                # Otherwise, break and report
-                break
-
-        # As a last resort, try an exported cookies.txt if DPAPI failed
-        cookie_file = None
-        if last_error_text and ('dpapi' in last_error_text.lower() or 'cookie' in last_error_text.lower()):
-            cookie_file = self._find_cookie_file()
-        
-        if cookie_file:
-            try:
-                cmd = [
-                    *self._yt_dlp_cmd(), '--no-warnings', '--progress', '--newline',
-                    '--no-playlist',
-                    '--socket-timeout', '30',
-                    '--extractor-args', 'youtube:player_client=web',  # Bypass age-gate
-                    '-f', 'b[ext=mp4]/best[ext=mp4]/best',  # Flexible format
-                    '--skip-unavailable-fragments',
-                    '--cookies', cookie_file,
-                    '-o', str(self.download_dir / '%(title)s.%(ext)s'),
-                    url
-                ]
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    universal_newlines=True
-                )
-                
+                default_name = Path(output_template).name if output_template else ("audio.mp3" if audio_only else "video.mp4")
+                filename = default_name
+                total_size = 0
+                downloaded_size = 0
                 last_progress_time = 0
-                min_progress_interval = 0.5
+                min_progress_interval = 0.5  # Only report progress every 500ms max
                 recent_output = []
-                
+
                 # Monitor progress
                 for line in process.stdout:
                     line = line.strip()
@@ -397,19 +728,82 @@ class StreamingDownloadManager:
                     if len(recent_output) >= 80:
                         recent_output.pop(0)
                     recent_output.append(line)
-                    
+
+                    # 1. Extract filename from destination line
+                    if '[download]' in line and 'Destination:' in line:
+                        try:
+                            raw_dest = line.split('Destination:')[1].strip()
+                            if raw_dest:
+                                filename = Path(raw_dest).name
+                        except Exception:
+                            pass
+
+                    # 2. Check if file was already downloaded
+                    already_match = re.search(r'\[download\]\s+(.+?)\s+has already been downloaded', line)
+                    if already_match:
+                        try:
+                            full_path = already_match.group(1).strip()
+                            filename = Path(full_path).name
+                            sz = os.path.getsize(full_path) if os.path.exists(full_path) else 0
+                            total_size = sz
+                            downloaded_size = sz
+                            if on_progress:
+                                on_progress(download_id, filename, 100, "N/A", total_size, downloaded_size)
+                        except Exception:
+                            pass
+
+                    # 3. Check for format merger output
+                    merger_match = re.search(r'\[Merger\]\s+Merging formats into\s+["\']?([^"\']+)["\']?', line)
+                    if merger_match:
+                        try:
+                            filename = Path(merger_match.group(1).strip()).name
+                        except Exception:
+                            pass
+
+                    # 4. Check for audio extraction output
+                    if '[ExtractAudio]' in line and 'Destination:' in line:
+                        try:
+                            raw_dest = line.split('Destination:')[1].strip()
+                            if raw_dest:
+                                filename = Path(raw_dest).name
+                        except Exception:
+                            pass
+
+                    # 5. Parse progress information
                     if '[download]' in line and '%' in line:
                         try:
                             percent_match = re.search(r'(\d+(?:\.\d+)?)%', line)
                             if percent_match:
                                 percent = float(percent_match.group(1))
-                                current_time = time.time()
-                                if on_progress and (current_time - last_progress_time) >= min_progress_interval:
-                                    on_progress(download_id, 'video', min(100, max(0, percent)), 'N/A', 0, 0)
-                                    last_progress_time = current_time
-                        except:
-                            pass
-                
+                            else:
+                                percent = 0
+
+                            size_match = re.search(r'of\s+(?:~\s*)?(\d+(?:\.\d+)?[KMGT]i?B)', line)
+                            if size_match:
+                                size_str = size_match.group(1)
+                                total_size = self._parse_size(size_str)
+                                downloaded_size = int((percent / 100) * total_size) if total_size > 0 else 0
+
+                            speed = "N/A"
+                            speed_match = re.search(r'at\s+(\d+(?:\.\d+)?\w+/s)', line)
+                            if speed_match:
+                                speed = speed_match.group(1)
+
+                            current_time = time.time()
+                            if on_progress and ((current_time - last_progress_time) >= min_progress_interval or percent >= 100):
+                                on_progress(
+                                    download_id,
+                                    filename,
+                                    min(100, max(0, percent)),
+                                    speed,
+                                    total_size,
+                                    downloaded_size
+                                )
+                                last_progress_time = current_time
+                        except Exception:
+                            continue
+
+                # Wait for process to complete with timeout
                 try:
                     process.wait(timeout=3600)
                 except subprocess.TimeoutExpired:
@@ -417,45 +811,155 @@ class StreamingDownloadManager:
                     if on_error:
                         on_error(download_id, "Download timeout - took more than 1 hour")
                     return None
-                
+
                 if process.returncode == 0:
+                    time.sleep(0.5)
                     if on_complete:
-                        output_file = self._find_downloaded_file('video.mp4')
-                        on_complete(download_id, 'video', output_file)
+                        output_file = self._find_downloaded_file(filename, output_template)
+                        on_complete(download_id, filename, output_file)
                     return download_id
                 else:
-                    stderr_output = "\n".join(recent_output[-40:])
-                    if stderr_output:
-                        last_error_text = stderr_output[:500]
-            except Exception as e:
-                last_error_text = str(e)
+                    error_lines = [l for l in recent_output if l.startswith('ERROR:') or 'error:' in l.lower()]
+                    if error_lines:
+                        last_error_text = "\n".join(error_lines)
+                    elif recent_output:
+                        last_error_text = "\n".join(recent_output[-5:])
+                    else:
+                        last_error_text = f"Process exited with code {process.returncode}"
+
+                    # Continue to try remaining fallback attempts in attempts
+                    continue
+
+            # As a last resort, try an exported cookies.txt if available
+            cookie_file = None
+            if last_error_text and ('dpapi' in last_error_text.lower() or 'cookie' in last_error_text.lower()):
+                cookie_file = self._find_cookie_file()
+            
+            if cookie_file:
+                try:
+                    cmd = [
+                        *self._yt_dlp_cmd(), '--no-warnings', '--progress', '--newline',
+                        '--no-playlist',
+                        '--socket-timeout', '30',
+                        '--skip-unavailable-fragments',
+                        '--postprocessor-args', 'ffmpeg:-nostdin',
+                    ]
+                    ffmpeg_exe = self._find_ffmpeg()
+                    if ffmpeg_exe:
+                        cmd.extend(['--ffmpeg-location', ffmpeg_exe])
+                    node_exe = self._find_node()
+                    if node_exe:
+                        cmd.extend(['--js-runtimes', f'node:{node_exe}'])
+                    if audio_only:
+                        cmd.extend(['-x', '--audio-format', 'mp3', '-f', format_spec or 'ba/b'])
+                    else:
+                        cmd.extend(['-f', format_spec or 'bestvideo*+bestaudio/best', '--merge-output-format', 'mp4'])
+                    cmd.extend(['--cookies', cookie_file, '-o', out_target, cleaned_url])
+
+                    process = subprocess.Popen(
+                        cmd,
+                        stdin=subprocess.DEVNULL,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        universal_newlines=True,
+                        bufsize=1,
+                        creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                    )
+                    with self.active_processes_lock:
+                        self.active_processes[download_id] = process
+                    
+                    last_progress_time = 0
+                    min_progress_interval = 0.5
+                    recent_output = []
+                    
+                    for line in process.stdout:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        if len(recent_output) >= 80:
+                            recent_output.pop(0)
+                        recent_output.append(line)
+                        if '[download]' in line and '%' in line:
+                            try:
+                                percent_match = re.search(r'(\d+(?:\.\d+)?)%', line)
+                                if percent_match:
+                                    percent = float(percent_match.group(1))
+                                    current_time = time.time()
+                                    if on_progress and (current_time - last_progress_time) >= min_progress_interval:
+                                        on_progress(download_id, 'video', min(100, max(0, percent)), 'N/A', 0, 0)
+                                        last_progress_time = current_time
+                            except Exception:
+                                pass
+                    
+                    try:
+                        process.wait(timeout=3600)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        if on_error:
+                            on_error(download_id, "Download timeout - took more than 1 hour")
+                        return None
+                    
+                    if process.returncode == 0:
+                        if on_complete:
+                            fallback_name = Path(output_template).name if output_template else ('audio.mp3' if audio_only else 'video.mp4')
+                            output_file = self._find_downloaded_file(fallback_name, output_template)
+                            on_complete(download_id, fallback_name, output_file)
+                        return download_id
+                    else:
+                        error_lines = [l for l in recent_output if l.startswith('ERROR:') or 'error:' in l.lower()]
+                        if error_lines:
+                            last_error_text = "\n".join(error_lines)
+                        elif recent_output:
+                            last_error_text = "\n".join(recent_output[-5:])
+                except Exception as e:
+                    last_error_text = str(e)
+        finally:
+            with self.active_processes_lock:
+                self.active_processes.pop(download_id, None)
+            if temp_cookie_file and os.path.exists(temp_cookie_file):
+                try:
+                    os.unlink(temp_cookie_file)
+                except Exception:
+                    pass
 
         # If we reach here, all attempts failed
-        # Build a user-friendly error message
         error_msg = last_error_text or 'Streaming download failed'
-        
-        # Clean up error message for display
         error_lower = error_msg.lower()
         if 'http error 404' in error_lower or 'video unavailable' in error_lower:
             error_msg = 'Video not found (HTTP 404). Check if the URL is correct.'
-        elif 'http error 403' in error_lower:
-            error_msg = 'Access forbidden (HTTP 403). Video may be private or blocked.'
+        elif 'http error 403' in error_lower or 'forbidden' in error_lower:
+            error_msg = 'Access forbidden (HTTP 403). Video may be private or requires login.'
         elif 'http error 429' in error_lower:
             error_msg = 'Too many requests (HTTP 429). Try again later.'
-        elif 'age-restrict' in error_lower or 'age restrict' in error_lower or 'confirm your age' in error_lower:
+        elif 'age-restrict' in error_lower or 'confirm your age' in error_lower:
             error_msg = 'Video is age-restricted. Please sign in to your account.'
         elif 'sign in' in error_lower and 'confirm' in error_lower:
             error_msg = 'Video requires sign-in. Please log into your browser.'
         elif 'private video' in error_lower or 'video is private' in error_lower:
-            error_msg = 'Video is private. You may need to be logged in.'
+            error_msg = 'Video is private. You may need to be logged into your account.'
+        elif 'redirect' in error_lower and 'login' in error_lower:
+            error_msg = 'Website redirects to login. Please open an individual post or reel rather than a feed.'
+        elif 'requested format is not available' in error_lower:
+            error_msg = 'Requested video format is not available. Try selecting Best Quality or MP3.'
         elif 'not available' in error_lower:
             error_msg = 'Video is not available in your region or has been deleted.'
         elif 'disabled' in error_lower:
             error_msg = 'Downloads are disabled for this video.'
         elif 'no video formats' in error_lower or 'unable to extract' in error_lower:
             error_msg = 'Could not extract video. The URL may be invalid or unsupported.'
-        elif len(error_msg) > 200:
-            error_msg = error_msg[:200] + '...'
+        elif 'failed to decrypt with dpapi' in error_lower:
+            error_msg = 'Browser cookies are encrypted (DPAPI). Direct download without cookies failed.'
+        else:
+            cleaned_lines = []
+            for eline in error_msg.splitlines():
+                eline = re.sub(r'^ERROR:\s*(\[[^\]]+\]\s*)?', '', eline).strip()
+                if eline:
+                    cleaned_lines.append(eline)
+            if cleaned_lines:
+                error_msg = cleaned_lines[-1]
+            if len(error_msg) > 200:
+                error_msg = error_msg[:200] + '...'
         
         if on_error:
             on_error(download_id, error_msg)
@@ -485,35 +989,62 @@ class StreamingDownloadManager:
         except:
             return 0
 
-    def _find_downloaded_file(self, filename):
-        """Find the actual downloaded file in the download directory"""
+    def _find_downloaded_file(self, filename, output_template=None):
+        """Find the actual downloaded file in the download directory or target subfolder"""
         try:
             import time
             
-            # First try exact filename match
-            exact_path = self.download_dir / filename
-            if exact_path.exists():
-                return str(exact_path)
-            
-            # Look for files modified in the last 60 seconds
+            # Determine target search directory from output_template or filename
+            if output_template:
+                norm_tmpl = str(output_template).replace('\\', '/')
+                target_sub = (self.download_dir / norm_tmpl).parent
+            else:
+                target_sub = (self.download_dir / filename).parent
+
+            search_dirs = [target_sub] if target_sub.exists() else []
+            if self.download_dir not in search_dirs:
+                search_dirs.append(self.download_dir)
+
+            # 1. Exact filename match in search directories
+            fname_p = Path(filename).name
+            for sdir in search_dirs:
+                exact_path = sdir / fname_p
+                if exact_path.exists() and exact_path.is_file():
+                    return str(exact_path.resolve())
+
+            # 2. Try case-insensitive filename or stem match in destination dir or root
+            fname_lower = fname_p.lower()
+            stem_lower = Path(filename).stem.lower()
+            for sdir in search_dirs:
+                if not sdir.exists():
+                    continue
+                for file in sdir.iterdir():
+                    if file.is_file():
+                        if file.name.lower() == fname_lower or file.stem.lower() == stem_lower:
+                            return str(file.resolve())
+
+            # 3. Look for files modified in the last 180 seconds in search directories
             current_time = time.time()
             recent_files = []
-            
-            for file in self.download_dir.glob('*'):
-                if file.is_file():
-                    mod_time = file.stat().st_mtime
-                    if current_time - mod_time < 60:  # Modified in last 60 seconds
-                        recent_files.append((file, mod_time))
-            
-            # Return the most recently modified file
+            for sdir in search_dirs:
+                if not sdir.exists():
+                    continue
+                for file in sdir.glob('*'):
+                    if file.is_file():
+                        mod_time = file.stat().st_mtime
+                        if current_time - mod_time < 180:
+                            recent_files.append((file, mod_time))
+
             if recent_files:
                 recent_files.sort(key=lambda x: x[1], reverse=True)
-                return str(recent_files[0][0])
-            
-            # Fallback to constructed path
+                return str(recent_files[0][0].resolve())
+
+            # Fallback to target directory with filename
+            fallback_dir = search_dirs[0] if search_dirs else self.download_dir
+            return str(fallback_dir / fname_p)
+        except Exception:
             return str(self.download_dir / filename)
-        except Exception as e:
-            return str(self.download_dir / filename)
+
 
 
 class DownloadManager:

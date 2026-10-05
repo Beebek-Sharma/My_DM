@@ -68,6 +68,15 @@ def test_handle_pause_resume_cancel_flow(tmp_path):
     host.handle_cancel_command({})
     assert sent[-1]['event'] == 'error'
 
+    # Test streaming cancellation
+    host.active_downloads['stream_123'] = 'streaming'
+    with patch.object(host.streaming_manager, 'cancel_download', return_value=True) as mock_cancel:
+        host.handle_cancel_command({'id': 'stream_123'})
+        assert mock_cancel.called
+        assert sent[-1]['event'] == 'cancelled'
+        assert sent[-1]['id'] == 'stream_123'
+        assert 'stream_123' not in host.active_downloads
+
 def test_handle_show_in_folder(tmp_path):
     host = NativeMessagingHost(downloads_dir=str(tmp_path))
     dummy_file = tmp_path / "downloaded video.mp4"
@@ -94,4 +103,37 @@ def test_handle_open_file(tmp_path):
         assert mock_startfile.called
         assert mock_startfile.call_args[0][0] == str(dummy_file)
         assert sent[-1]['event'] == 'opened'
+
+def test_handle_get_formats():
+    host = NativeMessagingHost()
+    sent = []
+    host.send_message = lambda m: sent.append(m)
+
+    mock_formats = {'title': 'Sample', 'formats': [{'label': '720p'}]}
+    with patch.object(host.streaming_manager, 'extract_formats', return_value=mock_formats):
+        host.handle_get_formats_command({'url': 'https://www.youtube.com/watch?v=123', 'id': 'fmt_1'})
+        # Give thread a moment to finish
+        import time
+        time.sleep(0.1)
+        assert len(sent) == 1
+        assert sent[0]['event'] == 'formats'
+        assert sent[0]['id'] == 'fmt_1'
+        assert sent[0]['data']['title'] == 'Sample'
+
+def test_handle_get_playlist_info():
+    host = NativeMessagingHost()
+    sent = []
+    host.send_message = lambda m: sent.append(m)
+
+    mock_playlist = {'is_playlist': True, 'title': 'Sample Playlist', 'item_count': 5, 'entries': []}
+    with patch.object(host.streaming_manager, 'extract_playlist_info', return_value=mock_playlist):
+        host.handle_get_playlist_command({'url': 'https://www.youtube.com/playlist?list=PL123', 'id': 'pl_1'})
+        import time
+        time.sleep(0.1)
+        assert len(sent) == 1
+        assert sent[0]['event'] == 'playlist_info'
+        assert sent[0]['id'] == 'pl_1'
+        assert sent[0]['data']['title'] == 'Sample Playlist'
+        assert sent[0]['data']['item_count'] == 5
+
 

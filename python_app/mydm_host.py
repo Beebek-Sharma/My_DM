@@ -162,18 +162,23 @@ class NativeMessagingHost:
     def handle_download_command(self, message):
         url = message.get('url')
         referer = message.get('referer')
+        cookie_header = message.get('cookie_header')
+        format_spec = message.get('format_spec')
+        audio_only = bool(message.get('audio_only'))
+        is_explicit_native = bool(message.get('is_streaming') or message.get('engine') == 'native')
 
         if not url:
             self.send_message({'event': 'error', 'error': 'No URL provided'})
             return
 
         try:
-            self.log(f"Starting download: {url}")
+            self.log(f"Starting download: {url} (format={format_spec}, audio_only={audio_only})")
 
-            # Detect streaming sites and route to yt-dlp
-            if StreamingDownloadManager.is_streaming_site(url):
-                self.log("Detected streaming site - using yt-dlp")
+            # Detect streaming sites or explicit native requests and route to yt-dlp
+            if is_explicit_native or StreamingDownloadManager.is_streaming_site(url):
+                self.log("Detected streaming or native format request - using yt-dlp")
                 download_id = message.get('id') or hashlib.md5(url.encode()).hexdigest()[:12]
+                output_template = message.get('output_template') or message.get('filename')
                 self.active_downloads[download_id] = 'streaming'
                 self.send_message({'event': 'started', 'id': download_id})
 
@@ -184,7 +189,11 @@ class NativeMessagingHost:
                             on_progress=self.on_progress,
                             on_complete=self.on_complete,
                             on_error=self.on_error,
-                            download_id=download_id
+                            download_id=download_id,
+                            format_spec=format_spec,
+                            audio_only=audio_only,
+                            cookie_header=cookie_header,
+                            output_template=output_template
                         )
                     except Exception as e:
                         self.on_error(download_id, str(e))
@@ -206,6 +215,66 @@ class NativeMessagingHost:
         except Exception as e:
             self.log(f"Failed: {str(e)}")
             self.send_message({'event': 'error', 'error': str(e)})
+
+    def handle_get_formats_command(self, message):
+        url = message.get('url')
+        req_id = message.get('id')
+        cookie_header = message.get('cookie_header')
+        if not url:
+            self.send_message({'event': 'formats_error', 'id': req_id, 'error': 'No URL provided'})
+            return
+
+        def _fetch_formats():
+            try:
+                self.log(f"Extracting formats for: {url}")
+                info = self.streaming_manager.extract_formats(url, cookie_header=cookie_header)
+                self.send_message({
+                    'event': 'formats',
+                    'id': req_id,
+                    'url': url,
+                    'data': info
+                })
+                self.log(f"Successfully sent formats for: {url}")
+            except Exception as e:
+                self.log(f"Error extracting formats for {url}: {str(e)}")
+                self.send_message({
+                    'event': 'formats_error',
+                    'id': req_id,
+                    'url': url,
+                    'error': str(e)
+                })
+
+        threading.Thread(target=_fetch_formats, daemon=True).start()
+
+    def handle_get_playlist_command(self, message):
+        url = message.get('url')
+        req_id = message.get('id')
+        cookie_header = message.get('cookie_header')
+        if not url:
+            self.send_message({'event': 'playlist_error', 'id': req_id, 'error': 'No URL provided'})
+            return
+
+        def _fetch_playlist():
+            try:
+                self.log(f"Extracting playlist info for: {url}")
+                info = self.streaming_manager.extract_playlist_info(url, cookie_header=cookie_header)
+                self.send_message({
+                    'event': 'playlist_info',
+                    'id': req_id,
+                    'url': url,
+                    'data': info
+                })
+                self.log(f"Successfully sent playlist info for: {url} ({info.get('item_count')} items)")
+            except Exception as e:
+                self.log(f"Error extracting playlist for {url}: {str(e)}")
+                self.send_message({
+                    'event': 'playlist_error',
+                    'id': req_id,
+                    'url': url,
+                    'error': str(e)
+                })
+
+        threading.Thread(target=_fetch_playlist, daemon=True).start()
 
     def handle_pause_command(self, message):
         """Handle pause command"""
@@ -272,7 +341,15 @@ class NativeMessagingHost:
 
         try:
             if self.active_downloads.get(download_id) == 'streaming':
-                raise RuntimeError('Cancel is not supported for streaming downloads')
+                self.streaming_manager.cancel_download(download_id)
+                self.active_downloads.pop(download_id, None)
+                self.send_message({
+                    'event': 'cancelled',
+                    'id': download_id
+                })
+                self.log(f"Cancelled streaming download: {download_id}")
+                return
+
             self.download_manager.cancel_download(download_id)
             self.send_message({
                 'event': 'cancelled',
@@ -286,7 +363,7 @@ class NativeMessagingHost:
             })
 
     def _resolve_file_path(self, message):
-        """Helper to resolve file path from message or download ID"""
+        """Helper to resolve file path from message or download ID into an absolute path"""
         file_path = message.get('path')
         download_id = message.get('id')
         if not file_path:
@@ -295,37 +372,60 @@ class NativeMessagingHost:
             elif download_id and download_id in self.download_manager.downloads:
                 file_path = self.download_manager.downloads[download_id].get('output_file')
 
-        if file_path and not os.path.isabs(file_path):
-            candidate = os.path.join(self.downloads_dir, file_path)
-            if os.path.exists(candidate):
-                file_path = candidate
-            else:
-                # Also check without folder prefixes
-                base_name = os.path.basename(file_path)
-                base_candidate = os.path.join(self.downloads_dir, base_name)
-                if os.path.exists(base_candidate):
-                    file_path = base_candidate
+        if not file_path:
+            return str(self.downloads_dir)
 
-        return file_path
+        # If already absolute and exists, return it
+        if os.path.isabs(file_path):
+            if os.path.exists(file_path):
+                return file_path
+            # Check if basename exists anywhere in downloads folder
+            base_name = os.path.basename(file_path)
+        else:
+            base_name = os.path.basename(file_path)
+
+        # Check candidate locations under downloads_dir
+        candidates = [
+            os.path.join(self.downloads_dir, file_path),
+            os.path.join(self.downloads_dir, 'MyDM', file_path),
+            os.path.join(self.downloads_dir, base_name),
+            os.path.join(self.downloads_dir, 'MyDM', base_name),
+            os.path.join(self.downloads_dir, 'MyDM', 'Videos', base_name),
+            os.path.join(self.downloads_dir, 'MyDM', 'Images', base_name),
+            os.path.join(self.downloads_dir, 'MyDM', 'Documents', base_name),
+            os.path.join(self.downloads_dir, 'MyDM', 'Audio', base_name),
+            os.path.join(self.downloads_dir, 'MyDM', 'Archives', base_name),
+            os.path.join(self.downloads_dir, 'MyDM', 'Programs', base_name),
+        ]
+
+        for cand in candidates:
+            if os.path.exists(cand):
+                return cand
+
+        # If not on disk yet, return default candidate rooted in downloads_dir (never relative/empty!)
+        return os.path.join(self.downloads_dir, base_name)
 
     def handle_show_in_folder(self, message):
-        """Handle request to reveal downloaded file in Windows Explorer"""
+        """Handle request to reveal downloaded file in Windows Explorer (never opens Documents)"""
         file_path = self._resolve_file_path(message)
-        norm = os.path.normpath(file_path) if file_path else None
+        norm = os.path.normpath(file_path) if file_path else str(self.downloads_dir)
         
         try:
             import subprocess
-            if norm and os.path.exists(norm):
+            if norm and os.path.isfile(norm):
                 # Critical on Windows: /select, must NOT be enclosed in quotes on command line!
                 subprocess.Popen(f'explorer.exe /select,"{norm}"')
                 self.log(f"Revealed in folder: {norm}")
+            elif norm and os.path.isdir(norm):
+                subprocess.Popen(f'explorer.exe "{norm}"')
+                self.log(f"Opened directory: {norm}")
             elif norm and os.path.exists(os.path.dirname(norm)):
                 subprocess.Popen(f'explorer.exe "{os.path.dirname(norm)}"')
                 self.log(f"Opened parent directory: {os.path.dirname(norm)}")
             else:
-                # Fallback to Downloads directory (never Documents!)
-                subprocess.Popen(f'explorer.exe "{self.downloads_dir}"')
-                self.log(f"Fallback opened downloads folder: {self.downloads_dir}")
+                downloads_abs = os.path.normpath(str(self.downloads_dir))
+                subprocess.Popen(f'explorer.exe "{downloads_abs}"')
+                self.log(f"Fallback opened downloads folder: {downloads_abs}")
         except Exception as e:
             self.log(f"Error revealing in folder: {str(e)}")
 
@@ -334,17 +434,34 @@ class NativeMessagingHost:
         file_path = self._resolve_file_path(message)
         norm = os.path.normpath(file_path) if file_path else None
 
-        if norm and os.path.exists(norm):
+        if norm and os.path.isfile(norm):
             try:
                 os.startfile(norm)
                 self.log(f"Opened file with default app: {norm}")
                 self.send_message({'event': 'opened', 'id': message.get('id'), 'file': norm})
+                return
             except Exception as e:
                 self.log(f"Error opening file: {str(e)}")
                 self.send_message({'event': 'error', 'id': message.get('id'), 'error': f"Failed to open file: {str(e)}"})
-        else:
-            self.log(f"File not found to open: {norm}")
-            self.send_message({'event': 'error', 'id': message.get('id'), 'error': f"File not found: {norm}"})
+                return
+
+        # Secondary search in downloads tree
+        if file_path:
+            base = os.path.basename(file_path)
+            for root, dirs, files in os.walk(str(self.downloads_dir)):
+                if base in files:
+                    found_path = os.path.join(root, base)
+                    try:
+                        os.startfile(found_path)
+                        self.log(f"Found and opened file: {found_path}")
+                        self.send_message({'event': 'opened', 'id': message.get('id'), 'file': found_path})
+                        return
+                    except Exception as e:
+                        self.log(f"Error opening found file: {str(e)}")
+                        break
+
+        self.log(f"File not found to open: {norm}")
+        self.send_message({'event': 'error', 'id': message.get('id'), 'error': f"File not found: {norm}"})
 
     def run(self):
         """Main message loop"""
@@ -365,6 +482,10 @@ class NativeMessagingHost:
 
                 if command == 'download':
                     self.handle_download_command(message)
+                elif command == 'get_formats':
+                    self.handle_get_formats_command(message)
+                elif command == 'get_playlist_info':
+                    self.handle_get_playlist_command(message)
                 elif command == 'pause':
                     self.handle_pause_command(message)
                 elif command == 'resume':

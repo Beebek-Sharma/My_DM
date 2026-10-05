@@ -24,8 +24,19 @@ const { DownloadEngine } = MyDMDownloadEngine;
 const store = new DownloadStore();
 const engine = new DownloadEngine(store);
 
-// Initialize engine asynchronously
-engine.init().catch((err) => {
+// Initialize engine asynchronously and reconcile any stale native download states
+engine.init().then(() => {
+  const records = store.getAll();
+  for (const r of records) {
+    if (r.engine === 'native' && (r.status === STATES.DOWNLOADING || r.status === STATES.STARTING)) {
+      store.updateRecord(r.id, {
+        status: STATES.PAUSED,
+        speed: 0,
+        speedFormatted: ''
+      });
+    }
+  }
+}).catch((err) => {
   console.error('[MyDM] Engine init error:', err);
 });
 
@@ -55,6 +66,87 @@ function isStreamingUrl(url) {
   }
 }
 
+function isDirectVideoUrl(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    let host = parsed.hostname.toLowerCase();
+    if (host.startsWith('www.')) host = host.substring(4);
+    const path = parsed.pathname;
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      return path === '/watch' || path.startsWith('/shorts/') || path.startsWith('/live/');
+    }
+    if (host === 'youtu.be') return path.length > 1;
+    if (host === 'vimeo.com' || host === 'player.vimeo.com') return /\/\d+/.test(path);
+    if (host === 'tiktok.com' || host === 'm.tiktok.com' || host === 'vm.tiktok.com') {
+      return path.includes('/video/') || path.includes('/v/');
+    }
+    if (host === 'instagram.com' || host === 'm.instagram.com') {
+      return /^\/(p|reel|tv|stories)\/([A-Za-z0-9_-]+)/.test(path);
+    }
+    if (host === 'twitter.com' || host === 'x.com' || host === 'mobile.twitter.com') {
+      return path.includes('/status/');
+    }
+    if (host === 'facebook.com' || host === 'm.facebook.com' || host === 'fb.watch') {
+      return path.includes('/watch') || path.includes('/reel/') || path.includes('/videos/') || path.includes('story.php');
+    }
+    if (host === 'reddit.com' || host === 'v.redd.it') {
+      return path.includes('/comments/') || host === 'v.redd.it';
+    }
+    if (host === 'twitch.tv' || host === 'm.twitch.tv') {
+      return path.includes('/videos/') || path.includes('/clip/');
+    }
+    if (host === 'bilibili.com' || host === 'b23.tv') {
+      return path.includes('/video/');
+    }
+    if (host === 'dailymotion.com') return path.includes('/video/');
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
+function isPlaylistUrl(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    let host = parsed.hostname.toLowerCase();
+    if (host.startsWith('www.')) host = host.substring(4);
+    if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+      return parsed.pathname === '/playlist' || parsed.searchParams.has('list');
+    }
+    return parsed.pathname.includes('/playlist') || parsed.searchParams.has('list');
+  } catch (_) {
+    return false;
+  }
+}
+
+function getCookiesHeader(url, callback) {
+  if (typeof callback === 'function') {
+    if (typeof chrome === 'undefined' || !chrome.cookies || !url) {
+      callback('');
+      return;
+    }
+    try {
+      chrome.cookies.getAll({ url }, (cookies) => {
+        if (chrome.runtime.lastError || !cookies || cookies.length === 0) {
+          callback('');
+          return;
+        }
+        const header = cookies.map((c) => `${c.name}=${c.value}`).join('; ');
+        callback(header);
+      });
+    } catch (_) {
+      callback('');
+    }
+    return;
+  }
+  return new Promise((resolve) => {
+    getCookiesHeader(url, resolve);
+  });
+}
+
 // Native Messaging Bridge (com.mydm.native)
 let nativePort = null;
 
@@ -67,6 +159,16 @@ function getNativePort() {
       const err = chrome.runtime.lastError ? chrome.runtime.lastError.message : 'Port disconnected';
       console.warn('[MyDM] Native messaging disconnected:', err);
       nativePort = null;
+      const records = store.getAll();
+      for (const r of records) {
+        if (r.engine === 'native' && (r.status === STATES.DOWNLOADING || r.status === STATES.STARTING)) {
+          store.updateRecord(r.id, {
+            status: STATES.PAUSED,
+            speed: 0,
+            speedFormatted: ''
+          });
+        }
+      }
     });
     return nativePort;
   } catch (err) {
@@ -84,8 +186,54 @@ function sendToNativeHost(message) {
   port.postMessage(message);
 }
 
+const pendingFormatRequests = new Map();
+const pendingPlaylistRequests = new Map();
+
 function handleNativeMessage(msg) {
   if (!msg || !msg.id) return;
+
+  // Handle video format detection responses
+  if (msg.event === 'formats') {
+    const pending = pendingFormatRequests.get(msg.id);
+    if (pending) {
+      clearTimeout(pending.timer);
+      pendingFormatRequests.delete(msg.id);
+      pending.resolve(msg.data);
+      return;
+    }
+  }
+
+  if (msg.event === 'formats_error') {
+    const pending = pendingFormatRequests.get(msg.id);
+    if (pending) {
+      clearTimeout(pending.timer);
+      pendingFormatRequests.delete(msg.id);
+      pending.reject(new Error(msg.error || 'Failed to extract video formats'));
+      return;
+    }
+  }
+
+  // Handle playlist info detection responses
+  if (msg.event === 'playlist_info') {
+    const pending = pendingPlaylistRequests.get(msg.id);
+    if (pending) {
+      clearTimeout(pending.timer);
+      pendingPlaylistRequests.delete(msg.id);
+      pending.resolve(msg.data);
+      return;
+    }
+  }
+
+  if (msg.event === 'playlist_error') {
+    const pending = pendingPlaylistRequests.get(msg.id);
+    if (pending) {
+      clearTimeout(pending.timer);
+      pendingPlaylistRequests.delete(msg.id);
+      pending.reject(new Error(msg.error || 'Failed to extract playlist info'));
+      return;
+    }
+  }
+
   const record = store.get(msg.id);
   if (!record) return;
 
@@ -135,6 +283,8 @@ function handleNativeMessage(msg) {
         updates.filePath = msg.file;
       }
       store.updateRecord(msg.id, updates);
+      checkNativeQueue();
+      if (engine && engine.scheduleNext) engine.scheduleNext();
       break;
     }
 
@@ -143,10 +293,13 @@ function handleNativeMessage(msg) {
         status: STATES.FAILED,
         error: msg.error || 'Video extraction error'
       });
+      checkNativeQueue();
+      if (engine && engine.scheduleNext) engine.scheduleNext();
       break;
 
     case 'paused':
       store.updateRecord(msg.id, { status: STATES.PAUSED });
+      checkNativeQueue();
       break;
 
     case 'resumed':
@@ -155,56 +308,117 @@ function handleNativeMessage(msg) {
 
     case 'cancelled':
       store.updateRecord(msg.id, { status: STATES.CANCELLED });
+      checkNativeQueue();
+      if (engine && engine.scheduleNext) engine.scheduleNext();
       break;
   }
 }
 
-// Download dispatcher (routes streaming to native host, others to browser engine)
-async function triggerDownload({ url, referer = '', candidateName = '' }) {
+function startNativeDownload(record) {
+  if (!record || record.status === STATES.DOWNLOADING) return;
+  store.updateRecord(record.id, {
+    status: STATES.STARTING,
+    startedAt: record.startedAt || Date.now(),
+    error: null
+  });
+
+  getCookiesHeader(record.url, (cookieHeader) => {
+    try {
+      sendToNativeHost({
+        command: 'download',
+        url: record.url,
+        referer: record.referer || record.url,
+        id: record.id,
+        filename: record.relativePath || record.filename,
+        output_template: record.relativePath || record.filename,
+        format_spec: record.formatSpec || null,
+        audio_only: Boolean(record.audioOnly),
+        is_streaming: true,
+        cookie_header: cookieHeader || ''
+      });
+    } catch (err) {
+      store.updateRecord(record.id, {
+        status: STATES.FAILED,
+        error: err.message
+      });
+      checkNativeQueue();
+    }
+  });
+}
+
+function checkNativeQueue() {
+  const all = store.getAll();
+  const activeCount = all.filter(
+    (d) => d.status === STATES.DOWNLOADING || d.status === STATES.STARTING || d.status === STATES.RESUMING
+  ).length;
+
+  const maxConcurrent = (store.getSettings && store.getSettings().maxConcurrentDownloads) || 3;
+  const availableSlots = Math.max(0, maxConcurrent - activeCount);
+  if (availableSlots <= 0) return;
+
+  const queuedNative = all.filter((d) => d.engine === 'native' && d.status === STATES.QUEUED);
+  for (let i = 0; i < Math.min(availableSlots, queuedNative.length); i++) {
+    startNativeDownload(queuedNative[i]);
+  }
+}
+
+// Download dispatcher (routes streaming & custom formats to native host, others to browser engine)
+async function triggerDownload({ url, referer = '', candidateName = '', formatSpec = null, audioOnly = false, quality = null }) {
   if (!url || typeof url !== 'string' || !url.startsWith('http')) {
     throw new Error('Invalid download URL. Must start with http:// or https://');
   }
 
-  if (isStreamingUrl(url)) {
+  const isStreaming = isStreamingUrl(url) || Boolean(formatSpec) || Boolean(audioOnly);
+
+  if (isStreaming) {
+    const defaultExt = audioOnly ? 'mp3' : 'mp4';
+    const category = audioOnly ? 'Audio' : 'Videos';
+
     const existing = store.getByUrl(url);
-    if (existing && isActive(existing.status)) {
+    if (existing && isActive(existing.status) && existing.category === category && (existing.formatSpec || null) === (formatSpec || null)) {
       return { duplicate: true, record: existing };
     }
-
     let candidate = candidateName;
     if (!candidate) {
       if (typeof FilenameUtil !== 'undefined' && FilenameUtil && typeof FilenameUtil.extractFilenameFromUrl === 'function') {
-        candidate = FilenameUtil.extractFilenameFromUrl(url, 'video.mp4');
+        candidate = FilenameUtil.extractFilenameFromUrl(url, `media.${defaultExt}`);
       } else if (typeof MyDMFilenameUtil !== 'undefined' && MyDMFilenameUtil && typeof MyDMFilenameUtil.extractFilenameFromUrl === 'function') {
-        candidate = MyDMFilenameUtil.extractFilenameFromUrl(url, 'video.mp4');
+        candidate = MyDMFilenameUtil.extractFilenameFromUrl(url, `media.${defaultExt}`);
       } else {
         try {
           const parsed = new URL(url);
           const v = parsed.searchParams.get('v');
-          candidate = v ? `${v}.mp4` : 'video.mp4';
+          candidate = v ? `${v}.${defaultExt}` : `media.${defaultExt}`;
         } catch (_) {
-          candidate = 'video.mp4';
+          candidate = `media.${defaultExt}`;
         }
       }
     }
-    const filename = candidate.includes('.') ? candidate : `${candidate}.mp4`;
+    const filename = candidate.includes('.') ? candidate : `${candidate}.${defaultExt}`;
+
+    const all = store.getAll();
+    const activeCount = all.filter(
+      (d) => d.status === STATES.DOWNLOADING || d.status === STATES.STARTING || d.status === STATES.RESUMING
+    ).length;
+    const maxConcurrent = (store.getSettings && store.getSettings().maxConcurrentDownloads) || 3;
+    const initialStatus = activeCount < maxConcurrent ? STATES.STARTING : STATES.QUEUED;
 
     const record = store.createRecord({
       url,
       referer: referer || url,
       filename,
-      category: 'Videos',
-      relativePath: `Videos/${filename}`,
-      status: STATES.STARTING,
-      engine: 'native'
+      category,
+      relativePath: `${category}/${filename}`,
+      status: initialStatus,
+      engine: 'native',
+      audioOnly: Boolean(audioOnly),
+      quality: quality || (audioOnly ? 'Audio MP3' : 'Best Quality'),
+      formatSpec: formatSpec || null
     });
 
-    sendToNativeHost({
-      command: 'download',
-      url: url,
-      referer: referer || url,
-      id: record.id
-    });
+    if (initialStatus === STATES.STARTING) {
+      startNativeDownload(record);
+    }
 
     return { duplicate: false, record };
   }
@@ -284,6 +498,127 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
       return true;
 
+    case 'GET_FORMATS': {
+      const url = request.url;
+      if (!url) {
+        sendResponse({ success: false, error: 'No URL provided' });
+        return true;
+      }
+      const id = 'fmt_' + Math.random().toString(36).substring(2, 9);
+      const promise = new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          pendingFormatRequests.delete(id);
+          reject(new Error('Format detection timed out'));
+        }, 15000);
+        pendingFormatRequests.set(id, { resolve, reject, timer });
+        getCookiesHeader(url, (cookieHeader) => {
+          try {
+            sendToNativeHost({ command: 'get_formats', id, url, cookie_header: cookieHeader || '' });
+          } catch (err) {
+            clearTimeout(timer);
+            pendingFormatRequests.delete(id);
+            reject(err);
+          }
+        });
+      });
+
+      promise
+        .then((data) => sendResponse({ success: true, data }))
+        .catch((err) => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
+
+    case 'GET_PLAYLIST_INFO': {
+      const url = request.url;
+      if (!url) {
+        sendResponse({ success: false, error: 'No URL provided' });
+        return true;
+      }
+      const id = 'pli_' + Math.random().toString(36).substring(2, 9);
+      const promise = new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          pendingPlaylistRequests.delete(id);
+          reject(new Error('Playlist extraction timed out'));
+        }, 30000);
+        pendingPlaylistRequests.set(id, { resolve, reject, timer });
+        getCookiesHeader(url, (cookieHeader) => {
+          try {
+            sendToNativeHost({ command: 'get_playlist_info', id, url, cookie_header: cookieHeader || '' });
+          } catch (err) {
+            clearTimeout(timer);
+            pendingPlaylistRequests.delete(id);
+            reject(err);
+          }
+        });
+      });
+
+      promise
+        .then((data) => sendResponse({ success: true, data }))
+        .catch((err) => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
+
+    case 'DOWNLOAD_PLAYLIST': {
+      const { playlistTitle, entries, formatSpec = null, audioOnly = false, quality = null, playlistUrl = '' } = request;
+      if (!entries || !Array.isArray(entries) || entries.length === 0) {
+        sendResponse({ success: false, error: 'No playlist entries provided' });
+        return true;
+      }
+
+      const defaultExt = audioOnly ? 'mp3' : 'mp4';
+      const category = audioOnly ? 'Audio' : 'Videos';
+      const safeFolder = (playlistTitle || 'Playlist').replace(/[/\\?%*:|"<>]/g, '_').trim().slice(0, 60) || 'Playlist';
+
+      const createdRecords = [];
+      entries.forEach((entry, idx) => {
+        if (!entry || !entry.url) return;
+        const cleanEntryTitle = (entry.title || `Video_${idx + 1}`).replace(/[/\\?%*:|"<>]/g, '_').trim().slice(0, 70);
+        const prefix = String(entry.index || (idx + 1)).padStart(2, '0');
+        const filename = `${prefix} - ${cleanEntryTitle}.${defaultExt}`;
+        const relativePath = `${category}/${safeFolder}/${filename}`;
+
+        // Check if duplicate is active
+        const existing = store.getByUrl(entry.url);
+        if (existing && isActive(existing.status) && existing.relativePath === relativePath) {
+          return;
+        }
+
+        if (existing && !isActive(existing.status)) {
+          store.updateRecord(existing.id, {
+            status: STATES.QUEUED,
+            error: null,
+            percent: 0,
+            relativePath,
+            filename,
+            category,
+            audioOnly: Boolean(audioOnly),
+            quality: quality || (audioOnly ? 'Audio MP3' : 'Best Quality'),
+            formatSpec: formatSpec || null
+          });
+          createdRecords.push(existing);
+          return;
+        }
+
+        const record = store.createRecord({
+          url: entry.url,
+          referer: playlistUrl || entry.url,
+          filename,
+          category,
+          relativePath,
+          status: STATES.QUEUED,
+          engine: 'native',
+          audioOnly: Boolean(audioOnly),
+          quality: quality || (audioOnly ? 'Audio MP3' : 'Best Quality'),
+          formatSpec: formatSpec || null
+        });
+        createdRecords.push(record);
+      });
+
+      checkNativeQueue();
+      sendResponse({ success: true, count: createdRecords.length, folder: safeFolder });
+      return true;
+    }
+
     case 'CREATE_DOWNLOAD':
     case 'downloadFromPopup': {
       const url = request.url;
@@ -294,7 +629,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       triggerDownload({
         url,
         referer: request.referer || '',
-        candidateName: request.filename || ''
+        candidateName: request.filename || request.candidateName || '',
+        formatSpec: request.formatSpec || null,
+        audioOnly: Boolean(request.audioOnly),
+        quality: request.quality || null
       }).then((res) => {
         sendResponse({ success: true, ...res });
       }).catch((err) => {
@@ -303,6 +641,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    case 'PAUSE':
     case 'PAUSE_DOWNLOAD':
     case 'pauseDownload': {
       const record = store.get(request.id);
@@ -324,6 +663,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    case 'RESUME':
     case 'RESUME_DOWNLOAD':
     case 'resumeDownload': {
       const record = store.get(request.id);
@@ -345,6 +685,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    case 'CANCEL':
     case 'CANCEL_DOWNLOAD':
     case 'cancelDownload': {
       const record = store.get(request.id);
@@ -353,9 +694,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendToNativeHost({ command: 'cancel', id: request.id });
         } catch (_) {}
         store.updateRecord(request.id, { status: STATES.CANCELLED });
+        checkNativeQueue();
         sendResponse({ success: true });
       } else {
         engine.cancelDownload(request.id).then(() => {
+          checkNativeQueue();
           sendResponse({ success: true });
         }).catch((err) => {
           sendResponse({ success: false, error: err.message });
@@ -364,21 +707,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    case 'RETRY':
     case 'RETRY_DOWNLOAD': {
       const record = store.get(request.id);
       if (record && record.engine === 'native') {
         try {
-          store.updateRecord(request.id, {
-            status: STATES.STARTING,
-            error: null,
-            percent: 0
-          });
-          sendToNativeHost({
-            command: 'download',
-            url: record.url,
-            referer: record.referer || record.url,
-            id: record.id
-          });
+          startNativeDownload(record);
           sendResponse({ success: true });
         } catch (err) {
           sendResponse({ success: false, error: err.message });
@@ -393,9 +727,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    case 'REMOVE':
     case 'DELETE_DOWNLOAD':
     case 'removeDownload': {
       const deleted = store.removeRecord(request.id);
+      checkNativeQueue();
       sendResponse({ success: deleted });
       return true;
     }
@@ -417,12 +753,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'SHOW_IN_FOLDER':
     case 'showInFolder': {
       const record = store.get(request.id);
+      const targetPath = (record && (record.filePath || record.relativePath || record.filename)) || '';
       if (record && record.engine === 'native') {
         try {
           sendToNativeHost({
             command: 'show_in_folder',
             id: request.id,
-            path: record.filePath || record.filename || ''
+            path: targetPath
           });
           sendResponse({ success: true });
         } catch (err) {
@@ -430,7 +767,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       } else {
         const shown = engine.showInFolder(request.id);
-        sendResponse({ success: shown });
+        if (!shown && targetPath) {
+          try {
+            sendToNativeHost({
+              command: 'show_in_folder',
+              id: request.id,
+              path: targetPath
+            });
+          } catch (_) {}
+        }
+        sendResponse({ success: shown || true });
       }
       return true;
     }
@@ -438,12 +784,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'OPEN_FILE':
     case 'openFile': {
       const record = store.get(request.id);
+      const targetPath = (record && (record.filePath || record.relativePath || record.filename)) || '';
       if (record && record.engine === 'native') {
         try {
           sendToNativeHost({
             command: 'open_file',
             id: request.id,
-            path: record.filePath || record.filename || ''
+            path: targetPath
           });
           sendResponse({ success: true });
         } catch (err) {
@@ -451,7 +798,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
       } else {
         const opened = engine.openFile(request.id);
-        sendResponse({ success: opened });
+        if (!opened && targetPath) {
+          try {
+            sendToNativeHost({
+              command: 'open_file',
+              id: request.id,
+              path: targetPath
+            });
+          } catch (_) {}
+        }
+        sendResponse({ success: opened || true });
       }
       return true;
     }
@@ -468,13 +824,64 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ resources: [] });
           return;
         }
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'DETECT_PAGE_RESOURCES' }, (res) => {
-          if (chrome.runtime.lastError || !res) {
-            sendResponse({ resources: [] });
-          } else {
-            sendResponse({ resources: res.resources || [] });
-          }
-        });
+        const activeTab = tabs[0];
+        const pageStreamResources = [];
+        if (isPlaylistUrl(activeTab.url)) {
+          const rawTitle = (activeTab.title || 'Playlist').replace(/\s*-\s*YouTube$/i, '').trim();
+          pageStreamResources.push({
+            url: activeTab.url,
+            filename: `${rawTitle.slice(0, 70)} (Playlist)`,
+            extension: 'mp4',
+            type: 'playlist',
+            title: `📁 Playlist: ${rawTitle}`,
+            isStream: true,
+            isPlaylist: true,
+            thumbnail: activeTab.favIconUrl || ''
+          });
+        }
+        if (isDirectVideoUrl(activeTab.url)) {
+          pageStreamResources.push({
+            url: activeTab.url,
+            filename: `${(activeTab.title || 'video').slice(0, 80)}.mp4`,
+            extension: 'mp4',
+            type: 'video',
+            title: activeTab.title || 'Streaming Video',
+            isStream: true,
+            thumbnail: activeTab.favIconUrl || ''
+          });
+        }
+
+        function queryTab(canInject = true) {
+          chrome.tabs.sendMessage(activeTab.id, { action: 'DETECT_PAGE_RESOURCES' }, (res) => {
+            if (chrome.runtime.lastError || !res) {
+              if (canInject && chrome.scripting && activeTab.id) {
+                chrome.scripting.executeScript({
+                  target: { tabId: activeTab.id },
+                  files: ['content.js']
+                }, () => {
+                  if (chrome.runtime.lastError) {
+                    sendResponse({ resources: pageStreamResources });
+                  } else {
+                    queryTab(false);
+                  }
+                });
+                return;
+              }
+              sendResponse({ resources: pageStreamResources });
+            } else {
+              const list = res.resources || [];
+              for (let i = pageStreamResources.length - 1; i >= 0; i--) {
+                const item = pageStreamResources[i];
+                if (!list.some((r) => r.url === item.url)) {
+                  list.unshift(item);
+                }
+              }
+              sendResponse({ resources: list });
+            }
+          });
+        }
+
+        queryTab(true);
       });
       return true;
     }

@@ -4,11 +4,45 @@ A high-performance, browser-native download manager for Chrome and Edge (Manifes
 
 ---
 
+## 📸 Interface Preview
+
+<div align="center">
+
+### ⚡ Cyber Telemetry Downloads Dashboard
+*Live 8-thread multi-segment chunk tracks, rolling speed telemetry, category tags, and integrity verification.*
+
+![Downloads Dashboard](docs/screenshots/downloads_dashboard.png)
+
+<br/>
+
+### 🔍 Media Sniffer & Tactical Stream Inspector
+*Real-time stream manifest detection (HLS/DASH/Direct), multi-select batch queueing, and one-click capture.*
+
+![Media Sniffer](docs/screenshots/media_sniffer.png)
+
+<br/>
+
+### ⚙️ Engine & Bento Settings Preferences
+*Customizable concurrent slots (3, 5, 8), subfolder categorization, FFmpeg merging, and audio completion cues.*
+
+![Settings Preferences](docs/screenshots/settings_preferences.png)
+
+</div>
+
+---
+
 ## 🚀 Key Features
 
 - **Browser-Only Ready**: Works immediately out of the box without requiring external desktop software or Python environments.
+- **Cyber Telemetry Dark UI (v2.4 Pro)**:
+  - Custom glassmorphic telemetry theme with pulsing engine heartbeat indicators.
+  - Live aggregate queue speed banner and active thread chunk monitors.
+  - Zero-XSS DOM rendering with strict attribute and textContent sanitization.
+- **8-Thread Multi-Segment Visualization**:
+  - Live visualization tracks showing real-time slice progression across concurrent threads.
+  - Finished slices glow in emerald green, active downloading slices pulse in cyber cyan, and pending slices queue cleanly.
 - **Deterministic State Machine**: Strict 12-state lifecycle (`QUEUED`, `STARTING`, `DOWNLOADING`, `PAUSING`, `PAUSED`, `RESUMING`, `COMPLETING`, `COMPLETED`, `CANCELLING`, `CANCELLED`, `RETRYING`, `FAILED`).
-- **Smart Concurrency Queue**: Configure maximum parallel downloads (1–10). Excess downloads queue automatically and start as slots free up.
+- **Smart Concurrency Queue**: Configure maximum parallel downloads via quick segmented controls (3, 5, 8 slots). Excess downloads queue automatically and start as slots free up.
 - **Reliable Pause & Resume**: True pause and resume backed by the browser's C++ network engine and HTTP Range headers.
 - **Intelligent Retry System**: Automatically recovers from transient network drops and server timeouts (408, 429, 5xx) with bounded exponential backoff and randomized jitter.
 - **Filename Intelligence & Security**:
@@ -18,15 +52,14 @@ A high-performance, browser-native download manager for Chrome and Edge (Manifes
 - **Automatic Categorization & Subfolders**:
   - Automatically sorts into **Documents**, **Images**, **Videos**, **Audio**, **Archives**, **Programs**, **ISOs**, and **Other**.
   - Routes files into organized subfolders (e.g., `Downloads/MyDM/Videos/sample.mp4`).
-- **Smart Media & Stream Detector**:
+- **Active Inspector & Media Sniffer**:
   - Content script detects `<video>`, `<audio>`, embedded sources, and HLS (`.m3u8`) / DASH (`.mpd`) stream manifests on the active webpage.
-  - 1-click download directly from the popup Media Sniffer tab.
+  - Multi-select checkboxes with a **Tactical Batch Action Strip** for instant batch link copying or bulk download queuing.
 - **Accurate Rolling-Window Speed & ETA**:
   - Stable rolling measurement (3-second window) prevents erratic speed spikes.
   - Honest progress tracking (no fabricated percentages when total size is unknown).
-- **Modern, Accessible UI**:
-  - Dark glassmorphism interface with search, category filtering, tabs, and keyboard accessibility.
-  - Zero-XSS DOM rendering (strict attribute and textContent manipulation).
+- **Web Audio API Feedback**:
+  - Synthesized dual-tone audio completion chime on finished downloads without external audio assets.
 - **Optional Native Host Support**: Retains full compatibility with the optional Python segmented / yt-dlp backend for advanced workflows.
 
 ---
@@ -35,11 +68,16 @@ A high-performance, browser-native download manager for Chrome and Edge (Manifes
 
 ```text
 MyDM/
+├── docs/
+│   └── screenshots/               # UI Interface screenshots for documentation
+│       ├── downloads_dashboard.png
+│       ├── media_sniffer.png
+│       └── settings_preferences.png
 ├── extension/
 │   ├── manifest.json              # Chrome/Edge MV3 Extension Manifest
 │   ├── background.js              # Service Worker & download orchestrator
 │   ├── content.js                 # Content script for page media sniffing
-│   ├── popup.html                 # Modern popup user interface
+│   ├── popup.html                 # Cyber Telemetry UI popup interface
 │   ├── popup.js                   # Popup controller & state sync
 │   ├── icon48.png                 # Extension icon
 │   └── engine/                    # Core browser engine modules
@@ -83,9 +121,10 @@ No Python or administrative setup is required for standard browser usage!
 
 ### How to Use
 - **Right-Click**: Right-click any link, image, audio, or video and select **"Download with MyDM"**.
-- **Popup Input**: Click the MyDM toolbar icon, paste any URL, or click **"📋 Paste"**, then click **Download**.
-- **Media Sniffer**: Switch to the **🔍 Media Sniffer** tab in the popup to detect downloadable media elements and stream playlists on the current webpage.
-- **Controls**: Pause, resume, cancel, retry, or reveal completed downloads in your folder directly from the popup.
+- **Popup Input**: Click the MyDM toolbar icon, paste any URL, or click **"Paste"**, then click **Download**.
+- **Media Sniffer**: Switch to the **Sniffer** tab in the popup to inspect detectable media streams and manifests on the active webpage, select multiple streams, and batch-download them.
+- **Controls**: Pause, resume, cancel, retry, or reveal completed downloads in your folder directly from the popup cards.
+- **Settings**: Switch to **Settings** to adjust concurrent slots (3, 5, 8), toggle auto-categorization subfolders, manage protocol sniffing, and export your configuration JSON.
 
 ---
 

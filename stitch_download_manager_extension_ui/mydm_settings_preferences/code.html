@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_stack" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary": "#bcc7de", "tertiary": "#4ee6aa", "surface-dim": "#0d1320", "primary-fixed": "#c4e7ff", "on-tertiary": "#003825", "on-primary-container": "#004965", "on-error-container": "#ffdad6", "inverse-surface": "#dde2f5", "outline": "#87929a", "tertiary-fixed": "#68fcbf", "secondary-fixed-dim": "#bcc7de", "secondary-fixed": "#d8e3fb", "inverse-primary": "#00668a", "outline-variant": "#3e484f", "on-secondary-fixed-variant": "#3c475a", "surface-container": "#1a1f2d", "on-secondary": "#263143", "on-tertiary-container": "#004e35", "background": "#0d1320", "error": "#ffb4ab", "surface-container-low": "#161b29", "primary": "#8ed5ff", "on-secondary-fixed": "#111c2d", "surface-container-highest": "#2f3543", "tertiary-container": "#22c990", "inverse-on-surface": "#2a303f", "primary-container": "#38bdf8", "surface-bright": "#333948", "secondary-container": "#3e495d", "surface": "#0d1320", "surface-container-lowest": "#080e1b", "on-primary": "#00354a", "surface-tint": "#7bd0ff", "on-tertiary-fixed": "#002114", "error-container": "#93000a", "on-surface": "#dde2f5", "on-background": "#dde2f5", "on-tertiary-fixed-variant": "#005137", "on-primary-fixed-variant": "#004c69", "surface-variant": "#2f3543", "on-secondary-container": "#aeb9d0", "primary-fixed-dim": "#7bd0ff", "on-error": "#690005", "on-primary-fixed": "#001e2c", "on-surface-variant": "#bdc8d1", "surface-container-high": "#242a38", "tertiary-fixed-dim": "#45dfa4" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-lg": "0.75rem", "gutter": "0.75rem", "space-sm": "0.375rem", "space-xs": "0.25rem", "margin": "1rem", "space-md": "0.5rem", "space-xl": "1rem" }, "fontFamily": { "label-lg": ["Inter"], "label-md": ["Inter"], "body-sm": ["Inter"], "caption": ["Inter"], "headline-lg": ["Inter"], "label-sm": ["Inter"], "body-lg": ["Inter"], "headline-sm": ["Inter"], "headline-md": ["Inter"], "body-md": ["Inter"] }, "fontSize": { "label-lg": ["12px", { "lineHeight": "16px", "letterSpacing": "0px", "fontWeight": "600" }], "label-md": ["11px", { "lineHeight": "14px", "letterSpacing": "0px", "fontWeight": "600" }], "body-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0px", "fontWeight": "400" }], "caption": ["10px", { "lineHeight": "14px", "letterSpacing": "0px", "fontWeight": "400" }], "headline-lg": ["16px", { "lineHeight": "20px", "letterSpacing": "-0.3px", "fontWeight": "700" }], "label-sm": ["10px", { "lineHeight": "12px", "letterSpacing": "0.3px", "fontWeight": "700" }], "body-lg": ["13px", { "lineHeight": "18px", "letterSpacing": "0px", "fontWeight": "400" }], "headline-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0px", "fontWeight": "600" }], "headline-md": ["14px", { "lineHeight": "18px", "letterSpacing": "-0.2px", "fontWeight": "600" }], "body-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0px", "fontWeight": "400" }] } } } };</script><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#0d1320;}body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:4px;}::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2);}</style><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 w-full z-50 pt-safe bg-surface-container-low/85 backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.35)]"><div class="h-14 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm min-w-0"><button aria-label="Go back" class="w-11 h-11 flex items-center justify-center rounded-lg bg-surface-container text-on-surface hover:text-primary transition-colors shrink-0" onclick="history.back()"><span class="material-symbols-outlined text-[20px]">arrow_back</span></button><img alt="MyDM Logo" class="h-7 w-auto object-contain shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1Us0uMln2zZ8p6h8dct5YjB6BZH2vDlTGWPZr1J8Pxp7SAgEq3Moa79WyMExVcThrZRRBqGL7znjEWXzIpWx2Cu7aKOpqjJmRhuMWmj0iepqOcvUwCDtzmsVeb3VesNo4ndZA8LVsCFIQa_zKTmsyJ61AGBBsgzG0bKSnxokFwykF_RiIgBVpx6SL1wMeXIIL72X2CmL3m4bCYJoIG09XE3d0_CbsoAMlpIQOxQ-5aDmbxZq3gEoN6ZvTZM"/><h1 class="font-headline-md text-headline-md text-on-surface truncate">Settings Preferences</h1></div><div class="flex items-center gap-space-xs"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-14 bg-surface px-margin"><div class="flex flex-col w-full pb-safe">
+<!-- Pinned-feel Navigation Sub-bar -->
+<div class="flex items-center gap-space-sm py-space-sm overflow-x-auto no-scrollbar mb-space-md">
+<button class="px-space-md py-space-xs rounded-lg bg-surface-container text-on-surface-variant font-label-md text-label-md whitespace-nowrap flex items-center gap-space-xs hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[15px]">download</span>
+      Downloads
+    </button>
+<button class="px-space-md py-space-xs rounded-lg bg-surface-container text-on-surface-variant font-label-md text-label-md whitespace-nowrap flex items-center gap-space-xs hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[15px]">radar</span>
+      Sniffer
+    </button>
+<div class="px-space-md py-space-xs rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md whitespace-nowrap flex items-center gap-space-xs shadow-sm">
+<span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">tune</span>
+      Engine Preferences
+    </div>
+<button class="px-space-md py-space-xs rounded-lg bg-surface-container text-on-surface-variant font-label-md text-label-md whitespace-nowrap flex items-center gap-space-xs hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[15px]">terminal</span>
+      Logs
+    </button>
+</div>
+<!-- Operational Telemetry Toast/Banner -->
+<div class="flex items-center justify-between px-space-md py-space-sm mb-space-lg rounded-xl bg-surface-container-low shadow-sm">
+<div class="flex items-center gap-space-sm min-w-0">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-tertiary">Core Daemon Active</span>
+<span class="text-outline text-caption font-caption">•</span>
+<span class="font-caption text-caption text-secondary truncate">Port 8924 (WebSockets)</span>
+</div>
+<button class="font-label-sm text-label-sm text-primary hover:text-primary-fixed transition-colors" id="reset-btn">
+      Defaults
+    </button>
+</div>
+<!-- Main Settings Container (Grouped Bento Cards) -->
+<div class="flex flex-col gap-space-lg">
+<!-- Group 1: General & Storage -->
+<section class="flex flex-col bg-surface-container rounded-xl p-space-md shadow-md gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">folder_special</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">General &amp; Storage</h2>
+</div>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-highest text-secondary text-caption font-caption uppercase tracking-wider">Storage</span>
+</div>
+<!-- Path selector -->
+<div class="flex flex-col gap-space-xs bg-surface-container-low p-space-sm rounded-lg">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-secondary">Default Download Directory</label>
+<span class="font-caption text-caption text-tertiary flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check_circle</span> 142 GB Free
+          </span>
+</div>
+<div class="flex items-center justify-between gap-space-sm mt-0.5">
+<div class="flex items-center gap-space-xs bg-surface-container-lowest px-space-sm py-1.5 rounded flex-1 min-w-0">
+<span class="material-symbols-outlined text-outline text-[16px] shrink-0">hard_drive</span>
+<span class="font-body-sm text-body-sm text-on-surface font-mono truncate">/Users/dev/Downloads/MyDM</span>
+</div>
+<button class="px-space-md py-1.5 rounded-lg bg-surface-container-highest hover:bg-secondary-container text-on-surface font-label-md text-label-md transition-colors shrink-0 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">drive_file_move</span>
+            Change
+          </button>
+</div>
+</div>
+<!-- Toggles in Group 1 -->
+<div class="flex flex-col gap-space-sm">
+<!-- Toggle 1 -->
+<label class="flex items-center justify-between gap-space-md p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface">Catch Browser Downloads</span>
+<span class="font-caption text-caption text-secondary truncate">Intercept native browser prompts instantly</span>
+</div>
+<div class="relative shrink-0 w-11 h-6 rounded-full bg-primary-container p-0.5 transition-colors">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-5 h-5 rounded-full bg-on-primary-container peer-checked:translate-x-5 transition-transform"></div>
+</div>
+</label>
+<!-- Toggle 2 -->
+<label class="flex items-center justify-between gap-space-md p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface">Clipboard Link Monitor</span>
+<span class="font-caption text-caption text-secondary truncate">Auto-extract audio, video &amp; archive URLs</span>
+</div>
+<div class="relative shrink-0 w-11 h-6 rounded-full bg-primary-container p-0.5 transition-colors">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-5 h-5 rounded-full bg-on-primary-container peer-checked:translate-x-5 transition-transform"></div>
+</div>
+</label>
+</div>
+</section>
+<!-- Group 2: Engine & Multi-Threading -->
+<section class="flex flex-col bg-surface-container rounded-xl p-space-md shadow-md gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">memory</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Engine &amp; Multi-Threading</h2>
+</div>
+<span class="px-space-xs py-0.5 rounded-full bg-surface-container-highest text-primary font-mono text-caption font-caption">v2.4 Core</span>
+</div>
+<!-- Concurrent Downloads Selector -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md text-secondary">Concurrent Task Slots</span>
+<span class="font-caption text-caption text-primary">Balanced (5 slots)</span>
+</div>
+<div class="grid grid-cols-3 gap-space-xs p-1 bg-surface-container-lowest rounded-lg">
+<button class="py-1.5 text-center rounded font-label-md text-label-md text-secondary hover:text-on-surface transition-all">
+            3 slots
+          </button>
+<button class="py-1.5 text-center rounded bg-primary-container text-on-primary-container font-label-md text-label-md shadow-sm">
+            5 slots
+          </button>
+<button class="py-1.5 text-center rounded font-label-md text-label-md text-secondary hover:text-on-surface transition-all">
+            8 slots
+          </button>
+</div>
+</div>
+<!-- Max Parts Per Download -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md text-secondary">Thread Slices per Payload</span>
+<span class="font-caption text-caption text-tertiary">Max Throughput</span>
+</div>
+<div class="grid grid-cols-3 gap-space-xs p-1 bg-surface-container-lowest rounded-lg">
+<button class="py-1.5 text-center rounded font-label-md text-label-md text-secondary hover:text-on-surface transition-all">
+            8 parts
+          </button>
+<button class="py-1.5 text-center rounded bg-primary-container text-on-primary-container font-label-md text-label-md shadow-sm">
+            16 parts
+          </button>
+<button class="py-1.5 text-center rounded font-label-md text-label-md text-secondary hover:text-on-surface transition-all">
+            32 parts
+          </button>
+</div>
+</div>
+<!-- User-Agent Spoofing -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-md text-label-md text-secondary">Network Identity (User-Agent Spoofing)</label>
+<div class="flex items-center justify-between bg-surface-container-lowest px-space-md py-2 rounded-lg cursor-pointer">
+<div class="flex items-center gap-space-sm min-w-0">
+<span class="material-symbols-outlined text-primary text-[18px]">laptop_mac</span>
+<span class="font-body-md text-body-md text-on-surface truncate">Chrome Native Desktop (macOS / X64)</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[18px]">expand_more</span>
+</div>
+</div>
+</section>
+<!-- Group 3: Media Sniffer Options -->
+<section class="flex flex-col bg-surface-container rounded-xl p-space-md shadow-md gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-tertiary text-[18px]">stream</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Media Sniffer &amp; Streams</h2>
+</div>
+<span class="px-space-xs py-0.5 rounded-full bg-tertiary-container/20 text-tertiary text-caption font-caption uppercase tracking-wider">Active Hook</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Toggle: HLS/DASH -->
+<label class="flex items-center justify-between gap-space-md p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md text-on-surface">Sniff HLS (.m3u8) &amp; DASH (.mpd)</span>
+<span class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-surface-container-highest text-primary font-mono">AV</span>
+</div>
+<span class="font-caption text-caption text-secondary truncate">Deep network protocol filter &amp; playlist parser</span>
+</div>
+<div class="relative shrink-0 w-11 h-6 rounded-full bg-primary-container p-0.5 transition-colors">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-5 h-5 rounded-full bg-on-primary-container peer-checked:translate-x-5 transition-transform"></div>
+</div>
+</label>
+<!-- Toggle: FFmpeg Merging -->
+<label class="flex items-center justify-between gap-space-md p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md text-on-surface">Auto-merge Streams via FFmpeg</span>
+<span class="px-1.5 py-0.5 text-[9px] font-bold rounded bg-tertiary/10 text-tertiary font-mono">WASM</span>
+</div>
+<span class="font-caption text-caption text-secondary truncate">Stitch fragmented transport streams seamlessly</span>
+</div>
+<div class="relative shrink-0 w-11 h-6 rounded-full bg-primary-container p-0.5 transition-colors">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-5 h-5 rounded-full bg-on-primary-container peer-checked:translate-x-5 transition-transform"></div>
+</div>
+</label>
+</div>
+</section>
+<!-- Group 4: Notifications & Audio Cues -->
+<section class="flex flex-col bg-surface-container rounded-xl p-space-md shadow-md gap-space-md">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">notifications_active</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Feedback &amp; Cues</h2>
+</div>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Sound alert -->
+<label class="flex items-center justify-between gap-space-md p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface">Completion Sound Alert</span>
+<span class="font-caption text-caption text-secondary truncate">Subtle haptic synthesized ping</span>
+</div>
+<div class="relative shrink-0 w-11 h-6 rounded-full bg-primary-container p-0.5 transition-colors">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-5 h-5 rounded-full bg-on-primary-container peer-checked:translate-x-5 transition-transform"></div>
+</div>
+</label>
+<!-- System Banner -->
+<label class="flex items-center justify-between gap-space-md p-space-sm rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors cursor-pointer select-none">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface">Native System Banner</span>
+<span class="font-caption text-caption text-secondary truncate">OS-level notification with quick 'Open' action</span>
+</div>
+<div class="relative shrink-0 w-11 h-6 rounded-full bg-primary-container p-0.5 transition-colors">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-5 h-5 rounded-full bg-on-primary-container peer-checked:translate-x-5 transition-transform"></div>
+</div>
+</label>
+</div>
+</section>
+<!-- Bottom Action Ribbon -->
+<div class="flex items-center gap-space-sm pt-space-xs pb-space-lg">
+<button class="flex-1 py-2.5 px-space-md rounded-lg bg-primary-container hover:bg-primary text-on-primary-container font-headline-sm text-headline-sm text-center shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">save</span>
+        Apply &amp; Hot-Reload
+      </button>
+<button class="p-2.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary hover:text-on-surface transition-colors" title="Export Configuration JSON">
+<span class="material-symbols-outlined text-[20px]">file_download</span>
+</button>
+</div>
+</div>
+<!-- Pinned Telemetry Engine Footer -->
+<footer class="mt-auto pt-space-md pb-space-lg flex flex-col items-center justify-center gap-1 text-center">
+<div class="flex items-center gap-space-xs font-mono text-caption font-caption text-secondary">
+<span>MyDM v2.4.0</span>
+<span class="text-outline">•</span>
+<span>Rust Engine + WASM</span>
+<span class="text-outline">•</span>
+<span class="text-tertiary flex items-center gap-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Ready
+      </span>
+</div>
+<div class="font-caption text-caption text-outline">
+      WebExtensions API Level 3 Compatible
+    </div>
+</footer>
+</div>
+<script>
+  // Simple micro-interactions for toggles and selector buttons
+  document.querySelectorAll('input[type="checkbox"]').forEach(toggle => {
+    toggle.addEventListener('change', function() {
+      const knob = this.nextElementSibling;
+      const track = this.parentElement;
+      if (this.checked) {
+        track.classList.remove('bg-surface-container-highest');
+        track.classList.add('bg-primary-container');
+        knob.classList.add('translate-x-5');
+      } else {
+        track.classList.add('bg-surface-container-highest');
+        track.classList.remove('bg-primary-container');
+        knob.classList.remove('translate-x-5');
+      }
+    });
+  });
+
+  // Selector button clusters
+  document.querySelectorAll('.grid-cols-3').forEach(group => {
+    const buttons = group.querySelectorAll('button');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => {
+          b.className = 'py-1.5 text-center rounded font-label-md text-label-md text-secondary hover:text-on-surface transition-all';
+        });
+        btn.className = 'py-1.5 text-center rounded bg-primary-container text-on-primary-container font-label-md text-label-md shadow-sm';
+      });
+    });
+  });
+</script></main></body></html>

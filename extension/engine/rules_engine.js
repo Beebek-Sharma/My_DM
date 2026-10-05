@@ -154,9 +154,53 @@
     return `MyDM/${category}/${filename}`;
   }
 
+  const STREAMING_DOMAINS = new Set([
+    'youtube.com', 'youtu.be', 'm.youtube.com',
+    'vimeo.com', 'player.vimeo.com',
+    'tiktok.com', 'vm.tiktok.com', 'm.tiktok.com',
+    'twitter.com', 'x.com', 'mobile.twitter.com',
+    'instagram.com', 'm.instagram.com',
+    'facebook.com', 'm.facebook.com', 'fb.watch',
+    'dailymotion.com',
+    'reddit.com', 'v.redd.it',
+    'twitch.tv', 'm.twitch.tv',
+    'soundcloud.com',
+    'bilibili.com', 'b23.tv'
+  ]);
+
+  function isStreamingUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    try {
+      const parsed = new URL(url);
+      let domain = parsed.hostname.toLowerCase();
+      if (domain.startsWith('www.')) domain = domain.substring(4);
+      return STREAMING_DOMAINS.has(domain);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function isPlaylistUrl(url) {
+    if (!url || typeof url !== 'string') return false;
+    try {
+      const parsed = new URL(url);
+      let host = parsed.hostname.toLowerCase();
+      if (host.startsWith('www.')) host = host.substring(4);
+      if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+        return parsed.pathname === '/playlist' || parsed.searchParams.has('list');
+      }
+      return parsed.pathname.includes('/playlist') || parsed.searchParams.has('list');
+    } catch (_) {
+      return false;
+    }
+  }
+
   return {
     CATEGORIES,
     EXTENSION_MAP,
+    STREAMING_DOMAINS,
+    isStreamingUrl,
+    isPlaylistUrl,
     getCategoryForFile,
     getRelativeDownloadPath
   };

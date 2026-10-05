@@ -5,12 +5,14 @@
   "description": "An advanced, browser-native download manager featuring smart queueing, media detection, resume, and categorization.",
   "permissions": [
     "downloads",
+    "downloads.open",
     "storage",
     "contextMenus",
     "activeTab",
     "scripting",
     "clipboardRead",
-    "nativeMessaging"
+    "nativeMessaging",
+    "cookies"
   ],
   "host_permissions": [
     "https://*/*",

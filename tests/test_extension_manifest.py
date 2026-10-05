@@ -12,6 +12,7 @@ def test_extension_manifest_json():
         
     assert data.get('manifest_version') == 3
     assert 'downloads' in data.get('permissions', [])
+    assert 'downloads.open' in data.get('permissions', [])
     assert 'storage' in data.get('permissions', [])
     assert 'contextMenus' in data.get('permissions', [])
     assert data.get('background', {}).get('service_worker') == 'background.js'

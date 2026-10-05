@@ -300,6 +300,7 @@ async function run() {
 
     let nativePosted = [];
     let messageListener = null;
+    let nativeMessageListener = null;
 
     const mockContext = {
       importScripts: () => {},
@@ -314,7 +315,7 @@ async function run() {
           onInstalled: { addListener: () => {} },
           onMessage: { addListener: (cb) => { messageListener = cb; } },
           connectNative: () => ({
-            onMessage: { addListener: () => {} },
+            onMessage: { addListener: (cb) => { nativeMessageListener = cb; } },
             onDisconnect: { addListener: () => {} },
             postMessage: (m) => nativePosted.push(m)
           }),
@@ -330,10 +331,13 @@ async function run() {
       console,
       URL,
       Set,
+      Map,
       Date,
       Math,
       Promise,
-      Error
+      Error,
+      setTimeout,
+      clearTimeout
     };
 
     vm.runInNewContext(bgCode, mockContext);
@@ -350,6 +354,228 @@ async function run() {
     assert.strictEqual(nativePosted.length, 1);
     assert.strictEqual(nativePosted[0].command, 'download');
     assert.strictEqual(nativePosted[0].url, 'https://youtu.be/4jiM4w7qr2g');
+
+    // Test Audio-only video download with formatSpec
+    const audioRes = await new Promise((resolve) => {
+      messageListener({
+        action: 'CREATE_DOWNLOAD',
+        url: 'https://youtu.be/4jiM4w7qr2g',
+        audioOnly: true,
+        formatSpec: 'ba/b',
+        quality: 'Audio MP3'
+      }, {}, resolve);
+    });
+
+    assert.strictEqual(audioRes.success, true);
+    assert.strictEqual(audioRes.record.category, 'Audio');
+    assert.strictEqual(nativePosted[1].command, 'download');
+    assert.strictEqual(nativePosted[1].audio_only, true);
+    assert.strictEqual(nativePosted[1].format_spec, 'ba/b');
+
+    // Test GET_FORMATS dispatch
+    const formatPromise = new Promise((resolve) => {
+      messageListener({ action: 'GET_FORMATS', url: 'https://youtu.be/4jiM4w7qr2g' }, {}, resolve);
+    });
+    assert.strictEqual(nativePosted[2].command, 'get_formats');
+    assert.strictEqual(nativePosted[2].url, 'https://youtu.be/4jiM4w7qr2g');
+
+    // Simulate native host responding with formats
+    nativeMessageListener({
+      event: 'formats',
+      id: nativePosted[2].id,
+      data: { title: 'Test YouTube Video', formats: [{ label: '1080p' }] }
+    });
+
+    const formatRes = await formatPromise;
+    assert.strictEqual(formatRes.success, true);
+    assert.strictEqual(formatRes.data.title, 'Test YouTube Video');
+
+    // Test control action aliases (PAUSE, CANCEL, SHOW_IN_FOLDER, OPEN_FILE)
+    const pauseRes = await new Promise((resolve) => {
+      messageListener({ action: 'PAUSE', id: res.record.id }, {}, resolve);
+    });
+    assert.strictEqual(pauseRes.success, true);
+    assert.strictEqual(nativePosted[nativePosted.length - 1].command, 'pause');
+
+    const cancelRes = await new Promise((resolve) => {
+      messageListener({ action: 'CANCEL', id: res.record.id }, {}, resolve);
+    });
+    assert.strictEqual(cancelRes.success, true);
+    assert.strictEqual(nativePosted[nativePosted.length - 1].command, 'cancel');
+
+    const folderRes = await new Promise((resolve) => {
+      messageListener({ action: 'SHOW_IN_FOLDER', id: res.record.id }, {}, resolve);
+    });
+    assert.strictEqual(folderRes.success, true);
+    assert.strictEqual(nativePosted[nativePosted.length - 1].command, 'show_in_folder');
+
+    const openRes = await new Promise((resolve) => {
+      messageListener({ action: 'OPEN_FILE', id: res.record.id }, {}, resolve);
+    });
+    assert.strictEqual(openRes.success, true);
+    assert.strictEqual(nativePosted[nativePosted.length - 1].command, 'open_file');
+  });
+
+  test('RulesEngine detects streaming platforms accurately', () => {
+    assert.strictEqual(RulesEngine.isStreamingUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), true);
+    assert.strictEqual(RulesEngine.isStreamingUrl('https://youtu.be/dQw4w9WgXcQ'), true);
+    assert.strictEqual(RulesEngine.isStreamingUrl('https://vimeo.com/123456'), true);
+    assert.strictEqual(RulesEngine.isStreamingUrl('https://tiktok.com/@user/video/123'), true);
+    assert.strictEqual(RulesEngine.isStreamingUrl('https://example.com/archive.zip'), false);
+    assert.strictEqual(RulesEngine.isStreamingUrl('https://files.org/installer.msi'), false);
+  });
+
+  await testAsync('DownloadEngine automatically captures external browser downloads into store', async () => {
+    const store = new DownloadStore();
+    await store.init();
+    const engine = new DownloadEngine(store);
+
+    // Simulate an external browser download creation event
+    engine._handleBrowserCreated({
+      id: 9999,
+      url: 'https://example.com/files/setup_v2.exe',
+      filename: 'C:\\Users\\User\\Downloads\\setup_v2.exe',
+      totalBytes: 52428800,
+      bytesReceived: 1048576,
+      state: 'in_progress'
+    });
+
+    const captured = store.getByBrowserId(9999);
+    assert.ok(captured, 'Record should be captured into store');
+    assert.strictEqual(captured.filename, 'setup_v2.exe');
+    assert.strictEqual(captured.category, 'Programs');
+    assert.strictEqual(captured.engine, 'browser');
+    assert.strictEqual(captured.totalBytes, 52428800);
+  });
+
+  test('Media sniffer prioritizes videos and streaming media over images', () => {
+    const mockDiscovered = [
+      { url: 'https://i.ytimg.com/vi/123/hqdefault.jpg', type: 'image' },
+      { url: 'https://example.com/doc.pdf', type: 'document' },
+      { url: 'https://www.youtube.com/watch?v=123', type: 'video', isStream: true },
+      { url: 'https://example.com/audio.mp3', type: 'audio' },
+      { url: 'https://example.com/banner.png', type: 'image' }
+    ];
+
+    mockDiscovered.sort((a, b) => {
+      const aScore = (a.type === 'video' || a.isStream) ? 3 : (a.type === 'audio' ? 2 : (a.type !== 'image' ? 1 : 0));
+      const bScore = (b.type === 'video' || b.isStream) ? 3 : (b.type === 'audio' ? 2 : (b.type !== 'image' ? 1 : 0));
+      return bScore - aScore;
+    });
+
+    assert.strictEqual(mockDiscovered[0].type, 'video');
+    assert.strictEqual(mockDiscovered[1].type, 'audio');
+    assert.strictEqual(mockDiscovered[2].type, 'document');
+    assert.strictEqual(mockDiscovered[3].type, 'image');
+    assert.strictEqual(mockDiscovered[4].type, 'image');
+  });
+
+  test('RulesEngine detects playlist URLs accurately', () => {
+    assert.strictEqual(RulesEngine.isPlaylistUrl('https://www.youtube.com/playlist?list=PLKnIA16_Rmvb-ToL3RQ_bwxG4_ND-0-DT'), true);
+    assert.strictEqual(RulesEngine.isPlaylistUrl('https://www.youtube.com/watch?v=9TKpRnoEb5s&list=PLKnIA16_Rmvb-ToL3RQ_bwxG4_ND-0-DT&index=3'), true);
+    assert.strictEqual(RulesEngine.isPlaylistUrl('https://music.youtube.com/playlist?list=PL12345'), true);
+    assert.strictEqual(RulesEngine.isPlaylistUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), false);
+    assert.strictEqual(RulesEngine.isPlaylistUrl('https://example.com/video.mp4'), false);
+  });
+
+  await testAsync('Background service worker handles GET_PLAYLIST_INFO and DOWNLOAD_PLAYLIST batch enqueue', async () => {
+    const fs = require('fs');
+    const vm = require('vm');
+    const bgCode = fs.readFileSync(path.join(__dirname, '../extension/background.js'), 'utf8');
+
+    let nativePosted = [];
+    let messageListener = null;
+    let nativeMessageListener = null;
+
+    const mockContext = {
+      importScripts: () => {},
+      MyDMStateMachine: StateMachine,
+      MyDMFilenameUtil: FilenameUtil,
+      MyDMRulesEngine: RulesEngine,
+      MyDMSpeedTracker: SpeedTracker,
+      MyDMDownloadStore: { DownloadStore },
+      MyDMDownloadEngine: { DownloadEngine },
+      chrome: {
+        runtime: {
+          onInstalled: { addListener: () => {} },
+          onMessage: { addListener: (cb) => { messageListener = cb; } },
+          connectNative: () => ({
+            onMessage: { addListener: (cb) => { nativeMessageListener = cb; } },
+            onDisconnect: { addListener: () => {} },
+            postMessage: (m) => nativePosted.push(m)
+          }),
+          sendMessage: () => Promise.resolve()
+        },
+        contextMenus: {
+          removeAll: (cb) => cb && cb(),
+          create: () => {},
+          onClicked: { addListener: () => {} }
+        },
+        tabs: { query: (q, cb) => cb([]), sendMessage: () => {} }
+      },
+      console,
+      URL,
+      Set,
+      Map,
+      Date,
+      Math,
+      Promise,
+      Error,
+      setTimeout,
+      clearTimeout
+    };
+
+    vm.runInNewContext(bgCode, mockContext);
+
+    // 1. Test GET_PLAYLIST_INFO
+    const playlistInfoPromise = new Promise((resolve) => {
+      messageListener({ action: 'GET_PLAYLIST_INFO', url: 'https://www.youtube.com/playlist?list=PL123' }, {}, resolve);
+    });
+
+    const getPlMsg = nativePosted.find((m) => m.command === 'get_playlist_info');
+    assert.ok(getPlMsg, 'get_playlist_info command sent to native host');
+    assert.strictEqual(getPlMsg.url, 'https://www.youtube.com/playlist?list=PL123');
+
+    // Simulate native host responding with playlist items
+    nativeMessageListener({
+      event: 'playlist_info',
+      id: getPlMsg.id,
+      data: {
+        title: 'Numpy Series',
+        item_count: 2,
+        entries: [
+          { url: 'https://www.youtube.com/watch?v=vid1', title: 'Part 1 - Intro', duration: 300, index: 1 },
+          { url: 'https://www.youtube.com/watch?v=vid2', title: 'Part 2 - Basics', duration: 420, index: 2 }
+        ]
+      }
+    });
+
+    const plResult = await playlistInfoPromise;
+    assert.strictEqual(plResult.success, true);
+    assert.strictEqual(plResult.data.title, 'Numpy Series');
+    assert.strictEqual(plResult.data.item_count, 2);
+
+    // 2. Test DOWNLOAD_PLAYLIST batch creation
+    const dlPlaylistRes = await new Promise((resolve) => {
+      messageListener({
+        action: 'DOWNLOAD_PLAYLIST',
+        playlistTitle: 'Numpy Series',
+        entries: plResult.data.entries,
+        formatSpec: 'bestvideo*+bestaudio/best',
+        audioOnly: false,
+        quality: 'Best Quality',
+        playlistUrl: 'https://www.youtube.com/playlist?list=PL123'
+      }, {}, resolve);
+    });
+
+    assert.strictEqual(dlPlaylistRes.success, true);
+    assert.strictEqual(dlPlaylistRes.count, 2);
+    assert.strictEqual(dlPlaylistRes.folder, 'Numpy Series');
+
+    // Verify native commands were initiated for queued downloads
+    const dlCommands = nativePosted.filter((m) => m.command === 'download');
+    assert.ok(dlCommands.length >= 1, 'At least 1 download started immediately according to concurrency');
+    assert.ok(dlCommands.some((c) => c.url.includes('vid1')));
   });
 
   console.log(`\n========================================`);

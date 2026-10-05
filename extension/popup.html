@@ -1,84 +1,200 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MyDM - Download Manager</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MyDM - Cyber Telemetry Download Manager</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-      --card-bg: rgba(255, 255, 255, 0.05);
-      --card-border: rgba(255, 255, 255, 0.1);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --primary: #38bdf8;
-      --primary-hover: #0ea5e9;
-      --success: #34d399;
-      --warning: #fbbf24;
-      --danger: #f87171;
-      --item-bg: rgba(30, 41, 59, 0.7);
-      --item-border: rgba(255, 255, 255, 0.08);
+      --surface: #0d1320;
+      --surface-dim: #0d1320;
+      --surface-bright: #333948;
+      --surface-container-lowest: #080e1b;
+      --surface-container-low: #161b29;
+      --surface-container: #1a1f2d;
+      --surface-container-high: #242a38;
+      --surface-container-highest: #2f3543;
+      --on-surface: #dde2f5;
+      --on-surface-variant: #bdc8d1;
+      --outline: #87929a;
+      --outline-variant: #3e484f;
+      --primary: #8ed5ff;
+      --primary-container: #38bdf8;
+      --on-primary: #00354a;
+      --on-primary-container: #004965;
+      --secondary: #bcc7de;
+      --secondary-container: #3e495d;
+      --on-secondary-container: #aeb9d0;
+      --tertiary: #4ee6aa;
+      --tertiary-container: #22c990;
+      --on-tertiary: #003825;
+      --error: #ffb4ab;
+      --error-container: #93000a;
+      --glass-card: rgba(22, 27, 41, 0.85);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-border-hover: rgba(56, 189, 248, 0.35);
+      --shadow-ambient: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --glow-cyan: 0 0 14px rgba(56, 189, 248, 0.3);
+      --glow-emerald: 0 0 14px rgba(78, 230, 170, 0.3);
     }
 
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-    }
-
-    body {
-      width: 540px;
-      height: 580px;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg-gradient);
-      color: var(--text-main);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
       user-select: none;
     }
 
-    /* Header */
+    html, body {
+      width: 560px;
+      height: 600px;
+      margin: 0;
+      padding: 0;
+      background-color: var(--surface);
+      color: var(--on-surface);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12px;
+      line-height: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Custom Slim Scrollbars */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    /* Material Icons Helper */
+    .icon {
+      font-family: 'Material Symbols Outlined', sans-serif;
+      font-weight: normal;
+      font-style: normal;
+      font-size: 16px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      vertical-align: middle;
+    }
+
+    /* Fixed Header */
     .header {
-      padding: 14px 18px;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--card-border);
+      height: 52px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 0 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      z-index: 10;
+      z-index: 50;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
     }
 
-    .header-left {
+    .header-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
+      min-width: 0;
     }
 
     .header-logo {
-      font-size: 22px;
-      filter: drop-shadow(0 2px 6px rgba(56, 189, 248, 0.4));
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.4));
+    }
+
+    .header-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .header-title {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
-      letter-spacing: -0.3px;
+      letter-spacing: -0.2px;
       color: #fff;
     }
 
+    .version-pill {
+      font-size: 9.5px;
+      font-weight: 700;
+      background: var(--surface-container-highest);
+      color: var(--primary);
+      padding: 1px 5px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .engine-status-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 1px;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--tertiary);
+      box-shadow: 0 0 8px var(--tertiary);
+      animation: pulse 1.6s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .engine-status-text {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
     .badge-status {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 9999px;
       background: rgba(56, 189, 248, 0.15);
       color: var(--primary);
       border: 1px solid rgba(56, 189, 248, 0.3);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-left: 4px;
     }
 
     .header-actions {
@@ -87,334 +203,817 @@
       gap: 6px;
     }
 
-    .btn-header {
-      padding: 5px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 6px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-main);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-header:hover {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-
-    /* Tabs */
-    .tabs-nav {
+    .btn-icon {
+      width: 30px;
+      height: 30px;
       display: flex;
-      background: rgba(15, 23, 42, 0.6);
-      border-bottom: 1px solid var(--card-border);
-      padding: 0 12px;
-    }
-
-    .tab-btn {
-      padding: 10px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      background: transparent;
-      border: none;
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .tab-btn:hover {
-      color: var(--text-main);
-    }
-
-    .tab-btn.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-    }
-
-    /* URL Input Section */
-    .input-section {
-      padding: 12px 16px;
-      background: rgba(30, 41, 59, 0.5);
-      border-bottom: 1px solid var(--card-border);
-      display: flex;
-      gap: 8px;
-    }
-
-    .input-field {
-      flex: 1;
-      padding: 9px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--card-border);
-      background: rgba(15, 23, 42, 0.8);
-      color: #fff;
-      font-size: 12px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .input-field:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
-    }
-
-    .btn-action {
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s;
-      display: inline-flex;
       align-items: center;
-      gap: 5px;
+      justify-content: center;
+      border-radius: 7px;
+      background: var(--surface-container);
+      color: var(--on-surface-variant);
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+      transition: all 0.18s ease;
     }
 
-    .btn-primary {
-      background: var(--primary);
-      color: #0f172a;
-    }
-
-    .btn-primary:hover {
-      background: var(--primary-hover);
+    .btn-icon:hover {
+      background: var(--surface-container-high);
+      color: var(--primary);
+      border-color: rgba(56, 189, 248, 0.3);
       transform: translateY(-1px);
     }
 
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-main);
-      border: 1px solid var(--card-border);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    /* Filter / Search Bar */
-    .filter-bar {
-      padding: 8px 16px;
-      background: rgba(15, 23, 42, 0.4);
+    .btn-header-text {
+      height: 28px;
+      padding: 0 9px;
       display: flex;
-      gap: 8px;
       align-items: center;
-      border-bottom: 1px solid var(--card-border);
+      justify-content: center;
+      border-radius: 6px;
+      background: var(--surface-container);
+      color: var(--on-surface-variant);
+      border: 1px solid var(--glass-border);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .btn-header-text:hover {
+      background: var(--surface-container-high);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Navigation Tabs Bar */
+    .tabs-nav {
+      height: 38px;
+      background: rgba(11, 17, 30, 0.95);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 4px 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      z-index: 45;
+    }
+
+    .tab-btn {
+      flex: 1;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--on-surface-variant);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tab-btn:hover {
+      color: var(--on-surface);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tab-btn.active {
+      background: var(--surface-container-high);
+      color: var(--primary);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .tab-counter {
+      padding: 1px 5px;
+      border-radius: 9999px;
+      background: var(--primary-container);
+      color: var(--on-primary);
+      font-size: 9.5px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .tab-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--tertiary);
+    }
+
+    /* Main Viewport */
+    .main-viewport {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      background: var(--surface);
+    }
+
+    /* Fixed Control Suite at top of downloads */
+    .control-suite {
+      padding: 10px 14px 6px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--surface);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      flex-shrink: 0;
+    }
+
+    /* URL Input Row */
+    .url-input-card {
+      background: var(--surface-container-low);
+      border: 1px solid var(--glass-border);
+      border-radius: 9px;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .url-input-wrap {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .url-input-icon {
+      position: absolute;
+      left: 7px;
+      color: var(--outline);
+      font-size: 15px;
+      pointer-events: none;
+    }
+
+    .url-input {
+      width: 100%;
+      height: 28px;
+      padding: 0 8px 0 28px;
+      border-radius: 6px;
+      border: none;
+      background: var(--surface-container-lowest);
+      color: var(--on-surface);
+      font-size: 11px;
+      outline: none;
+      transition: background 0.18s ease;
+    }
+
+    .url-input:focus {
+      background: var(--surface-container-high);
+    }
+
+    .url-input::placeholder {
+      color: var(--outline);
+    }
+
+    .btn-paste {
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 6px;
+      border: 1px solid var(--glass-border);
+      background: var(--surface-container-highest);
+      color: var(--on-surface);
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-paste:hover {
+      background: var(--surface-bright);
+      color: #fff;
+    }
+
+    .btn-download-primary {
+      height: 28px;
+      padding: 0 12px;
+      border-radius: 6px;
+      border: none;
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-download-primary:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    .btn-download-primary:active {
+      transform: scale(0.98);
+    }
+
+    /* Filter & Search Row */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 7px;
+      color: var(--outline);
+      font-size: 14px;
+      pointer-events: none;
     }
 
     .search-input {
-      flex: 1;
-      padding: 6px 10px;
-      font-size: 11px;
+      width: 100%;
+      height: 26px;
+      padding: 0 8px 0 26px;
       border-radius: 6px;
-      background: rgba(15, 23, 42, 0.6);
-      border: 1px solid var(--card-border);
-      color: #fff;
+      border: 1px solid var(--glass-border);
+      background: var(--surface-container);
+      color: var(--on-surface);
+      font-size: 11px;
       outline: none;
+      transition: background 0.18s ease;
+    }
+
+    .search-input:focus {
+      background: var(--surface-container-high);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .category-select-wrap {
+      position: relative;
+      flex-shrink: 0;
     }
 
     .category-select {
-      padding: 6px 8px;
-      font-size: 11px;
+      height: 26px;
+      padding: 0 22px 0 8px;
       border-radius: 6px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid var(--card-border);
-      color: #fff;
+      border: 1px solid var(--glass-border);
+      background: var(--surface-container);
+      color: var(--on-surface);
+      font-size: 11px;
+      font-weight: 500;
       outline: none;
+      appearance: none;
+      cursor: pointer;
     }
 
-    /* Tab Content Areas */
+    .category-chevron {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--outline);
+      font-size: 13px;
+    }
+
+    /* Telemetry Ribbon */
+    .telemetry-ribbon {
+      padding: 4px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--secondary);
+      background: rgba(8, 14, 27, 0.5);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      flex-shrink: 0;
+    }
+
+    .telemetry-left {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--on-surface-variant);
+    }
+
+    .telemetry-ping {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 6px var(--primary);
+      animation: pulse 1.2s infinite ease-in-out;
+    }
+
+    .telemetry-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--secondary);
+    }
+
+    /* Scrollable Content Views */
     .tab-content {
+      display: none;
       flex: 1;
       overflow-y: auto;
-      padding: 12px 16px;
-      display: none;
+      padding: 10px 14px 14px 14px;
     }
 
     .tab-content.active {
-      display: block;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    /* Custom Scrollbar */
-    .tab-content::-webkit-scrollbar {
-      width: 6px;
-    }
-    .tab-content::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 4px;
-    }
-
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text-muted);
-    }
-
-    .empty-icon {
-      font-size: 42px;
-      margin-bottom: 12px;
-      opacity: 0.6;
-    }
-
-    /* Download Item Card */
+    /* Cyber Download Cards */
     .download-card {
-      background: var(--item-bg);
-      border: 1px solid var(--item-border);
+      background: var(--glass-card);
+      border: 1px solid var(--glass-border);
       border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 10px;
-      transition: all 0.2s ease;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .download-card:hover {
-      border-color: rgba(56, 189, 248, 0.3);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+      background: var(--surface-container-low);
+      border-color: var(--glass-border-hover);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
     }
 
     .card-top {
       display: flex;
-      justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 6px;
-      gap: 10px;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-leading {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .file-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      background: var(--surface-container-high);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      flex-shrink: 0;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    .file-icon-box.complete {
+      color: var(--tertiary);
+      background: rgba(34, 201, 144, 0.15);
+    }
+
+    .file-icon-box.error {
+      color: var(--error);
+      background: rgba(147, 0, 10, 0.25);
+    }
+
+    .card-title-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .card-title-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
     }
 
     .card-filename {
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       color: #fff;
-      word-break: break-all;
-      flex: 1;
-      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 280px;
     }
 
-    .card-badges {
-      display: flex;
-      gap: 5px;
-      align-items: center;
+    .file-ext-tag {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: var(--surface-container-highest);
+      color: var(--secondary);
+      text-transform: uppercase;
       flex-shrink: 0;
     }
 
-    .badge {
+    .file-ext-tag.audio {
+      background: rgba(192, 132, 252, 0.2);
+      color: #c084fc;
+    }
+
+    .card-origin-url {
       font-size: 10px;
-      font-weight: 700;
+      color: var(--on-surface-variant);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+
+    .card-status-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
       padding: 2px 7px;
-      border-radius: 8px;
+      border-radius: 9999px;
+      font-size: 9.5px;
+      font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.3px;
     }
 
-    .badge-category {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--text-muted);
+    .status-badge.DOWNLOADING, .status-badge.STARTING, .status-badge.RESUMING {
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--primary);
     }
 
-    .badge-QUEUED { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
-    .badge-STARTING { background: rgba(56, 189, 248, 0.2); color: var(--primary); }
-    .badge-DOWNLOADING { background: rgba(56, 189, 248, 0.2); color: var(--primary); }
-    .badge-PAUSED { background: rgba(251, 191, 36, 0.2); color: var(--warning); }
-    .badge-COMPLETED { background: rgba(52, 211, 153, 0.2); color: var(--success); }
-    .badge-FAILED { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
-    .badge-RETRYING { background: rgba(192, 132, 252, 0.2); color: #c084fc; }
-    .badge-CANCELLED { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+    .status-badge.COMPLETED {
+      background: rgba(78, 230, 170, 0.18);
+      color: var(--tertiary);
+    }
 
-    /* Progress Bar */
-    .progress-bar-wrap {
+    .status-badge.PAUSED {
+      background: rgba(251, 191, 36, 0.18);
+      color: #fbbf24;
+    }
+
+    .status-badge.FAILED {
+      background: rgba(255, 180, 171, 0.18);
+      color: var(--error);
+    }
+
+    .status-badge.QUEUED {
+      background: rgba(188, 199, 222, 0.18);
+      color: var(--secondary);
+    }
+
+    .status-badge-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .card-size-sub {
+      font-size: 10px;
+      color: var(--secondary);
+      margin-top: 2px;
+    }
+
+    /* Main Progress Track */
+    .progress-track {
       width: 100%;
       height: 6px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 4px;
+      background: var(--surface-container-highest);
+      border-radius: 9999px;
       overflow: hidden;
-      margin: 8px 0;
+      position: relative;
     }
 
-    .progress-bar-fill {
+    .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, #38bdf8 0%, #0284c7 100%);
-      border-radius: 4px;
-      transition: width 0.3s ease;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #38bdf8 0%, #22c990 100%);
+      transition: width 0.25s ease-out;
     }
 
-    .progress-bar-fill.complete {
-      background: linear-gradient(90deg, #34d399 0%, #059669 100%);
+    .progress-fill.complete {
+      background: var(--tertiary-container);
+      width: 100% !important;
     }
 
-    .progress-bar-fill.error {
-      background: linear-gradient(90deg, #f87171 0%, #dc2626 100%);
+    .progress-fill.error {
+      background: var(--error);
     }
 
-    .card-meta {
+    .progress-fill.paused {
+      background: #fbbf24;
+    }
+
+    /* 8-Thread Multi-segment Visualization */
+    .chunks-bar {
       display: flex;
+      align-items: center;
+      gap: 2px;
+      width: 100%;
+      padding-top: 1px;
+    }
+
+    .chunk-slot {
+      height: 4px;
+      flex: 1;
+      border-radius: 2px;
+      background: var(--surface-container-highest);
+      transition: background 0.3s ease;
+    }
+
+    .chunk-slot.done {
+      background: var(--tertiary);
+    }
+
+    .chunk-slot.active {
+      background: var(--primary-container);
+      animation: pulse 1s infinite alternate;
+    }
+
+    /* Card Bottom Telemetry & Controls */
+    .card-bottom {
+      display: flex;
+      align-items: center;
       justify-content: space-between;
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 8px;
+      font-size: 10.5px;
+      color: var(--on-surface-variant);
+      padding-top: 2px;
     }
 
-    .card-error {
-      font-size: 11px;
-      color: #fca5a5;
-      background: rgba(239, 68, 68, 0.15);
-      border-left: 3px solid var(--danger);
-      padding: 6px 8px;
-      border-radius: 4px;
-      margin-bottom: 8px;
-      word-break: break-all;
+    .card-telemetry {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
     }
 
-    /* Card Controls */
+    .speed-badge {
+      color: var(--tertiary);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
     .card-controls {
       display: flex;
-      gap: 6px;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
     }
 
     .btn-ctrl {
-      padding: 4px 8px;
-      font-size: 11px;
-      font-weight: 600;
+      height: 24px;
+      padding: 0 7px;
       border-radius: 5px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text-main);
+      border: 1px solid var(--glass-border);
+      background: var(--surface-container);
+      color: var(--on-surface);
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 3px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
     }
 
     .btn-ctrl:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    .btn-ctrl.danger:hover {
-      background: rgba(239, 68, 68, 0.25);
-      border-color: var(--danger);
-      color: #fecaca;
+      background: var(--surface-container-high);
+      color: #fff;
     }
 
     .btn-ctrl.success:hover {
-      background: rgba(52, 211, 153, 0.25);
-      border-color: var(--success);
-      color: #d1fae5;
+      background: rgba(34, 201, 144, 0.2);
+      color: var(--tertiary);
+      border-color: rgba(78, 230, 170, 0.4);
+    }
+
+    .btn-ctrl.danger {
+      color: var(--error);
+      background: rgba(147, 0, 10, 0.2);
+      border-color: rgba(255, 180, 171, 0.2);
+    }
+
+    .btn-ctrl.danger:hover {
+      background: rgba(147, 0, 10, 0.5);
+      color: #fff;
+    }
+
+    /* Error Message Box */
+    .card-error {
+      background: rgba(147, 0, 10, 0.25);
+      border: 1px solid rgba(255, 180, 171, 0.3);
+      color: #ffd8d3;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      line-height: 14px;
+      word-break: break-word;
+    }
+
+    /* Sniffer Screen Layout */
+    .sniffer-header-card {
+      background: var(--surface-container-low);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      margin-bottom: 2px;
+    }
+
+    .sniffer-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sniffer-title-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .sniffer-count-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--primary);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+
+    .sniffer-url-box {
+      background: var(--surface-container-lowest);
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .sniffer-url-text {
+      font-size: 11px;
+      color: var(--on-surface);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .tls-badge {
+      font-size: 9.5px;
+      color: var(--tertiary);
+      background: rgba(78, 230, 170, 0.15);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .sniffer-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sniffer-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .sniffer-filter-btn {
+      padding: 3px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--glass-border);
+      background: var(--surface-container);
+      color: var(--on-surface-variant);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .sniffer-filter-btn:hover {
+      background: var(--surface-container-high);
+      color: #fff;
+    }
+
+    .sniffer-filter-btn.active {
+      background: var(--primary-container);
+      color: var(--on-primary);
+      border-color: var(--primary-container);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
     }
 
     /* Media Sniffer Card */
     .media-card {
-      background: var(--item-bg);
-      border: 1px solid var(--item-border);
+      background: var(--glass-card);
+      border: 1px solid var(--glass-border);
       border-radius: 10px;
-      padding: 10px 14px;
-      margin-bottom: 8px;
+      padding: 9px 11px;
       display: flex;
-      justify-content: space-between;
       align-items: center;
       gap: 10px;
+      position: relative;
+      transition: all 0.18s ease;
+    }
+
+    .media-card:hover {
+      background: var(--surface-container-low);
+      border-color: var(--glass-border-hover);
+    }
+
+    .media-checkbox {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--primary-container);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .media-thumb-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 7px;
+      background: var(--surface-container-high);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .media-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
     .media-info {
       flex: 1;
-      overflow: hidden;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .media-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
     }
 
     .media-title {
@@ -424,205 +1023,977 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      flex: 1;
     }
 
-    .media-url {
+    .media-badge {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
+
+    .media-badge.video { background: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+    .media-badge.image { background: rgba(52, 211, 153, 0.2); color: #34d399; }
+    .media-badge.audio { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .media-badge.file { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    .media-badge.playlist { background: rgba(168, 85, 247, 0.3); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.5); }
+
+    .media-telemetry-row {
       font-size: 10px;
-      color: var(--text-muted);
+      color: var(--on-surface-variant);
+      display: flex;
+      align-items: center;
+      gap: 5px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* Settings Form */
+    .media-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    /* Tactical Batch Strip */
+    .batch-action-strip {
+      background: rgba(36, 42, 56, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border-hover);
+      border-radius: 9px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+
+    .batch-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .batch-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .batch-sub {
+      font-size: 10px;
+      color: var(--on-surface-variant);
+    }
+
+    .batch-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* Settings Preferences Screen */
     .settings-group {
-      background: var(--item-bg);
-      border: 1px solid var(--item-border);
+      background: var(--glass-card);
+      border: 1px solid var(--glass-border);
       border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .settings-group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .settings-group-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
     }
 
     .settings-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 0;
     }
 
-    .settings-row:last-child {
-      border-bottom: none;
+    .settings-label-wrap {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
     }
 
     .settings-label {
-      font-size: 12px;
-      color: var(--text-main);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--on-surface);
     }
 
     .settings-desc {
       font-size: 10px;
-      color: var(--text-muted);
+      color: var(--on-surface-variant);
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--surface-container-highest);
+      transition: .2s;
+      border-radius: 9999px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #fff;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+      background-color: var(--primary-container);
+    }
+
+    input:checked + .toggle-slider:before {
+      transform: translateX(16px);
+      background-color: var(--on-primary);
+    }
+
+    /* Multi-choice Buttons for slots */
+    .segmented-control {
+      display: flex;
+      background: var(--surface-container-lowest);
+      border: 1px solid var(--glass-border);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .segmented-btn {
+      padding: 3px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: var(--secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .segmented-btn.active {
+      background: var(--primary-container);
+      color: var(--on-primary);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.3);
     }
 
     .settings-input {
       padding: 4px 8px;
       border-radius: 6px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid var(--card-border);
+      background: var(--surface-container-lowest);
+      border: 1px solid var(--glass-border);
       color: #fff;
-      font-size: 12px;
+      font-size: 11px;
+      outline: none;
     }
 
-    /* Footer */
-    .footer {
-      padding: 8px 16px;
-      background: rgba(15, 23, 42, 0.85);
-      border-top: 1px solid var(--card-border);
-      font-size: 10px;
-      color: var(--text-muted);
+    .settings-input:focus {
+      border-color: var(--primary);
+    }
+
+    /* Modal Sheet Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(8, 14, 27, 0.82);
+      backdrop-filter: blur(12px);
+      z-index: 100;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 510px;
+      background: var(--surface-container-low);
+      border: 1px solid var(--glass-border-hover);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.97) translateY(6px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      padding: 12px 16px;
+      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-header-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--on-surface-variant);
+      font-size: 20px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .modal-close-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .modal-body {
+      padding: 14px 16px;
+      max-height: 420px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-preview-box {
+      background: var(--surface-container);
+      border: 1px solid var(--glass-border);
+      border-radius: 9px;
+      padding: 10px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .modal-thumb {
+      width: 72px;
+      height: 52px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: var(--surface-container-highest);
+      flex-shrink: 0;
+    }
+
+    .modal-video-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .modal-video-sub {
+      font-size: 10.5px;
+      color: var(--secondary);
+      margin-top: 3px;
+    }
+
+    .playlist-mode-toggle {
+      display: flex;
+      background: var(--surface-container-lowest);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .playlist-mode-toggle.hidden {
+      display: none;
+    }
+
+    .mode-toggle-btn {
+      flex: 1;
+      height: 28px;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      color: var(--secondary);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mode-toggle-btn.active {
+      background: var(--primary-container);
+      color: var(--on-primary);
+      font-weight: 700;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .modal-section-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--primary);
+    }
+
+    .format-options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 170px;
+      overflow-y: auto;
+    }
+
+    .format-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      border-radius: 7px;
+      background: var(--surface-container);
+      border: 1px solid var(--glass-border);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .format-row:hover {
+      background: var(--surface-container-high);
+      border-color: rgba(56, 189, 248, 0.35);
+    }
+
+    .format-row.selected {
+      background: rgba(56, 189, 248, 0.16);
+      border-color: var(--primary-container);
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+
+    .format-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .modal-footer {
+      padding: 10px 16px;
+      background: rgba(15, 23, 42, 0.95);
+      border-top: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* Pinned Status Footer */
+    .footer {
+      height: 38px;
+      background: rgba(15, 23, 42, 0.95);
+      border-top: 1px solid var(--glass-border);
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10.5px;
+      color: var(--secondary);
+      flex-shrink: 0;
+      z-index: 40;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .footer-speed {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* Empty States */
+    .empty-state {
+      padding: 40px 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--on-surface-variant);
+      gap: 6px;
+    }
+
+    .empty-icon-box {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--surface-container);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary);
+      font-size: 24px;
+      margin-bottom: 4px;
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Toast Notification Overlay */
+    .toast-overlay {
+      position: fixed;
+      bottom: 46px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface-bright);
+      border: 1px solid var(--glass-border-hover);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 120;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toast-overlay.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
   </style>
 </head>
+
 <body>
 
-  <!-- Header -->
+  <!-- Pinned Top Header -->
   <header class="header">
-    <div class="header-left">
-      <span class="header-logo">📥</span>
-      <div>
-        <h1 class="header-title">MyDM</h1>
+    <div class="header-brand">
+      <img src="icon48.png" class="header-logo" alt="MyDM Logo" />
+      <div class="header-meta">
+        <div class="header-title-row">
+          <span class="header-title">MyDM</span>
+          <span class="version-pill">v2.4 Pro</span>
+        </div>
+        <div class="engine-status-row">
+          <span class="pulse-dot"></span>
+          <span class="engine-status-text">Engine Active</span>
+          <span id="badgeActiveCount" class="badge-status">Idle</span>
+        </div>
       </div>
-      <span id="badgeActiveCount" class="badge-status">Idle</span>
     </div>
     <div class="header-actions">
-      <button id="btnClearCompleted" class="btn-header" title="Clear completed downloads from list">Clear Done</button>
-      <button id="btnClearAll" class="btn-header" title="Clear all downloads from history">Clear All</button>
-      <button id="btnReloadExt" class="btn-header" title="Reload extension from disk">🔄 Reload</button>
+      <button id="btnClearCompleted" class="btn-header-text" title="Clear completed downloads from view">Clear Done</button>
+      <button id="btnClearAll" class="btn-header-text" title="Clear all downloads">Clear All</button>
+      <button id="btnReloadExt" class="btn-icon" title="Hot-reload extension from disk">
+        <span class="icon">autorenew</span>
+      </button>
+      <button id="btnHeaderSettings" class="btn-icon" title="Engine Settings & Preferences">
+        <span class="icon">tune</span>
+      </button>
     </div>
   </header>
 
-  <!-- Navigation Tabs -->
+  <!-- Pinned Navigation Tabs Strip -->
   <nav class="tabs-nav" role="tablist">
-    <button class="tab-btn active" data-tab="downloads" role="tab">All Downloads</button>
-    <button class="tab-btn" data-tab="active" role="tab">Active</button>
-    <button class="tab-btn" data-tab="completed" role="tab">Completed</button>
-    <button class="tab-btn" data-tab="sniffer" role="tab">🔍 Media Sniffer</button>
-    <button class="tab-btn" data-tab="settings" role="tab">⚙️ Settings</button>
+    <button class="tab-btn active" data-tab="downloads" role="tab">
+      <span>All</span>
+    </button>
+    <button class="tab-btn" data-tab="active" role="tab">
+      <span>Active</span>
+      <span id="tabCountActive" class="tab-counter" style="display: none;">0</span>
+    </button>
+    <button class="tab-btn" data-tab="completed" role="tab">
+      <span>Completed</span>
+    </button>
+    <button class="tab-btn" data-tab="sniffer" role="tab">
+      <span>Sniffer</span>
+      <span class="tab-dot"></span>
+    </button>
+    <button class="tab-btn" data-tab="settings" role="tab">
+      <span>Settings</span>
+    </button>
   </nav>
 
-  <!-- Download Link Input Bar -->
-  <div class="input-section">
-    <input type="text" id="inputUrl" class="input-field" placeholder="Paste URL to download (http:// or https://)..." autocomplete="off" />
-    <button id="btnStartDownload" class="btn-action btn-primary">⬇️ Download</button>
-    <button id="btnPasteClipboard" class="btn-action btn-secondary" title="Paste from clipboard">📋 Paste</button>
+  <!-- Main Scrollable Area -->
+  <div class="main-viewport">
+
+    <!-- Fixed Controls for Downloads view -->
+    <div id="downloadsControlSuite" class="control-suite">
+      <!-- Target URL Input Row -->
+      <div class="url-input-card">
+        <div class="url-input-wrap">
+          <span class="icon url-input-icon">link</span>
+          <input type="text" id="inputUrl" class="url-input" placeholder="Paste URL to download (http://, https://, magnet:)..." autocomplete="off" />
+        </div>
+        <button type="button" id="btnPasteClipboard" class="btn-paste" title="Paste link from clipboard">
+          <span class="icon" style="font-size: 14px;">content_paste</span>
+          <span>Paste</span>
+        </button>
+        <button type="button" id="btnStartDownload" class="btn-download-primary">
+          <span class="icon" style="font-size: 15px;">download</span>
+          <span>Download</span>
+        </button>
+      </div>
+
+      <!-- Search & Category Filters -->
+      <div class="filter-row">
+        <div class="search-wrap">
+          <span class="icon search-icon">search</span>
+          <input type="text" id="inputSearch" class="search-input" placeholder="Search by filename or URL..." />
+        </div>
+        <div class="category-select-wrap">
+          <select id="selectCategory" class="category-select">
+            <option value="ALL">All Categories</option>
+            <option value="Videos">Videos</option>
+            <option value="Audio">Audio</option>
+            <option value="Documents">Documents</option>
+            <option value="Archives">Archives (.iso, .zip)</option>
+            <option value="Programs">Software (.pkg, .exe)</option>
+            <option value="Images">Images</option>
+            <option value="Other">Other</option>
+          </select>
+          <span class="icon category-chevron">expand_more</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Ribbon -->
+    <div id="telemetryRibbon" class="telemetry-ribbon">
+      <div class="telemetry-left">
+        <span class="telemetry-ping"></span>
+        <span>Queue Telemetry</span>
+      </div>
+      <div class="telemetry-right">
+        <span id="telemetrySpeed">Peak 0.0 MB/s</span>
+        <span>•</span>
+        <span id="telemetryChunks">Active Chunks: 0</span>
+      </div>
+    </div>
+
+    <!-- TAB 1: Downloads Container (All, Active, Completed) -->
+    <main id="tabDownloads" class="tab-content active" role="tabpanel">
+      <div id="downloadsList" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Rendered Download Cards -->
+      </div>
+    </main>
+
+    <!-- TAB 2: Media Sniffer Inspector -->
+    <section id="tabSniffer" class="tab-content" role="tabpanel">
+      <!-- Active Tab Inspector Banner -->
+      <div class="sniffer-header-card">
+        <div class="sniffer-top-row">
+          <div class="sniffer-title-badge">
+            <span class="icon" style="color: var(--primary);">radar</span>
+            <span>Active Inspector</span>
+          </div>
+          <span id="snifferCapturedPill" class="sniffer-count-pill">0 streams captured</span>
+        </div>
+        <div class="sniffer-url-box">
+          <span class="icon" style="color: var(--outline); font-size: 14px;">link</span>
+          <span id="snifferCurrentUrl" class="sniffer-url-text">Scanning active tab...</span>
+          <span class="tls-badge">TLS Encrypted</span>
+        </div>
+        <div class="sniffer-actions-row">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <div class="toggle-switch">
+              <input type="checkbox" id="snifferAutoCaptureToggle" checked />
+              <span class="toggle-slider"></span>
+            </div>
+            <span style="font-size: 10px; color: var(--on-surface-variant); font-weight: 600;">Auto Capture</span>
+          </label>
+          <button type="button" id="btnScanMedia" class="btn-ctrl success" style="height: 26px; padding: 0 10px;">
+            <span class="icon" id="scanIcon">autorenew</span>
+            <span>Re-Sniff Tab</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sniffer Filters Bar -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 2px;">
+        <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--on-surface-variant); letter-spacing: 0.5px;">Detected Streams</span>
+        <div class="sniffer-filter-bar">
+          <button type="button" class="sniffer-filter-btn active" data-filter="all">All (<span id="countSnifferAll">0</span>)</button>
+          <button type="button" class="sniffer-filter-btn" data-filter="video">Video (<span id="countSnifferVideos">0</span>)</button>
+          <button type="button" class="sniffer-filter-btn" data-filter="audio">Audio (<span id="countSnifferAudio">0</span>)</button>
+          <button type="button" class="sniffer-filter-btn" data-filter="image">Images (<span id="countSnifferImages">0</span>)</button>
+          <button type="button" class="sniffer-filter-btn" data-filter="file">Files (<span id="countSnifferFiles">0</span>)</button>
+        </div>
+      </div>
+
+      <!-- Sniffer Items List -->
+      <div id="snifferList" style="display: flex; flex-direction: column; gap: 7px; flex: 1;">
+        <!-- Rendered Media Stream Cards -->
+      </div>
+
+      <!-- Tactical Batch Action Strip -->
+      <div id="snifferBatchStrip" class="batch-action-strip" style="display: none;">
+        <div class="batch-left">
+          <span class="icon" style="color: var(--primary);">checklist</span>
+          <div>
+            <div id="batchTitle" class="batch-title">Queue Selection</div>
+            <div id="batchSub" class="batch-sub">0 streams ready</div>
+          </div>
+        </div>
+        <div class="batch-btns">
+          <button type="button" id="btnBatchCopyLinks" class="btn-ctrl">
+            <span class="icon" style="font-size: 13px;">content_copy</span>
+            <span>Copy Links</span>
+          </button>
+          <button type="button" id="btnBatchDownload" class="btn-ctrl success" style="background: var(--primary-container); color: var(--on-primary); font-weight: 700;">
+            <span class="icon" style="font-size: 14px;">download</span>
+            <span id="btnBatchDownloadText">Download</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Settings & Preferences -->
+    <section id="tabSettings" class="tab-content" role="tabpanel">
+      <!-- Operational Telemetry Toast -->
+      <div style="background: var(--surface-container-low); border: 1px solid var(--glass-border); border-radius: 9px; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span class="pulse-dot"></span>
+          <span style="font-size: 10px; font-weight: 700; color: var(--tertiary); text-transform: uppercase;">Core Daemon Active</span>
+          <span style="color: var(--outline);">•</span>
+          <span style="font-size: 10px; color: var(--secondary);">Native Host Connected</span>
+        </div>
+        <button type="button" id="btnResetSettings" style="background: transparent; border: none; color: var(--primary); font-size: 10px; font-weight: 600; cursor: pointer;">Reset Defaults</button>
+      </div>
+
+      <!-- Group 1: General & Storage -->
+      <div class="settings-group">
+        <div class="settings-group-header">
+          <div class="settings-group-title">
+            <span class="icon" style="color: var(--primary);">folder_special</span>
+            <span>General & Storage</span>
+          </div>
+          <span class="file-ext-tag">STORAGE</span>
+        </div>
+
+        <div style="background: var(--surface-container-lowest); border: 1px solid var(--glass-border); border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; flex-direction: column; min-width: 0;">
+            <span style="font-size: 9.5px; color: var(--secondary); font-weight: 600;">Default Download Folder</span>
+            <span style="font-size: 11px; color: #fff; font-family: monospace;" id="displayDownloadDir">~/Downloads/MyDM</span>
+          </div>
+          <span style="font-size: 9.5px; color: var(--tertiary); font-weight: 700;">Drive Ready</span>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Catch Browser Downloads</span>
+            <span class="settings-desc">Intercept native browser downloads into MyDM queue</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingAutoCapture" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Automatic Categorization</span>
+            <span class="settings-desc">Organize files into Videos, Documents, Archives</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingAutoCategorize" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Category Subfolders</span>
+            <span class="settings-desc">Save into MyDM/&lt;Category&gt;/filename</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingCategoryFolders" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Group 2: Engine & Multi-Threading -->
+      <div class="settings-group">
+        <div class="settings-group-header">
+          <div class="settings-group-title">
+            <span class="icon" style="color: var(--primary);">memory</span>
+            <span>Engine & Multi-Threading</span>
+          </div>
+          <span class="file-ext-tag">v2.4 CORE</span>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Concurrent Task Slots</span>
+            <span class="settings-desc">Max downloads executing simultaneously</span>
+          </div>
+          <div class="segmented-control" id="controlConcurrentSlots">
+            <button type="button" class="segmented-btn" data-val="3">3</button>
+            <button type="button" class="segmented-btn active" data-val="5">5</button>
+            <button type="button" class="segmented-btn" data-val="8">8</button>
+          </div>
+          <input type="hidden" id="settingMaxConcurrent" value="5" />
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Network Auto-Retry Attempts</span>
+            <span class="settings-desc">Max retries with exponential backoff</span>
+          </div>
+          <input type="number" id="settingMaxRetries" class="settings-input" min="0" max="10" value="3" style="width: 50px; text-align: center;" />
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">File Conflict Action</span>
+            <span class="settings-desc">Behavior when duplicate filename exists</span>
+          </div>
+          <select id="settingConflictAction" class="settings-input" style="font-size: 11px;">
+            <option value="uniquify">Rename (add number)</option>
+            <option value="overwrite">Overwrite existing</option>
+            <option value="prompt">Prompt location</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Group 3: Media Sniffer & Streams -->
+      <div class="settings-group">
+        <div class="settings-group-header">
+          <div class="settings-group-title">
+            <span class="icon" style="color: var(--tertiary);">stream</span>
+            <span>Media Sniffer & Streams</span>
+          </div>
+          <span class="file-ext-tag">HLS/DASH</span>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Sniff HLS (.m3u8) & DASH (.mpd)</span>
+            <span class="settings-desc">Deep network stream inspector and manifest parser</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingSniffStreams" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Auto-Merge Video & Audio via FFmpeg</span>
+            <span class="settings-desc">Merge separate high-res video and audio into MP4</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingAutoMergeFfmpeg" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Group 4: Feedback & Cues -->
+      <div class="settings-group">
+        <div class="settings-group-header">
+          <div class="settings-group-title">
+            <span class="icon" style="color: var(--primary);">notifications_active</span>
+            <span>Feedback & Audio Cues</span>
+          </div>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Completion Sound Alert</span>
+            <span class="settings-desc">Futuristic synthesized audio chime on finish</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingCompletionSound" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="settings-row">
+          <div class="settings-label-wrap">
+            <span class="settings-label">Native System Notification</span>
+            <span class="settings-desc">OS-level notification banner when download completes</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="settingSystemNotify" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Settings Action Buttons -->
+      <div style="display: flex; gap: 8px; margin-top: 2px; margin-bottom: 8px;">
+        <button type="button" id="btnSaveSettings" class="btn-download-primary" style="flex: 1; height: 32px; font-size: 11px;">
+          <span class="icon" style="font-size: 15px;">save</span>
+          <span>Apply & Save Preferences</span>
+        </button>
+        <button type="button" id="btnExportConfig" class="btn-paste" style="height: 32px; padding: 0 12px;" title="Export config as JSON">
+          <span class="icon" style="font-size: 15px;">file_download</span>
+          <span>Export JSON</span>
+        </button>
+      </div>
+    </section>
+
   </div>
 
-  <!-- Filter & Search Bar -->
-  <div class="filter-bar">
-    <input type="text" id="inputSearch" class="search-input" placeholder="Search by filename or URL..." />
-    <select id="selectCategory" class="category-select">
-      <option value="ALL">All Categories</option>
-      <option value="Documents">📄 Documents</option>
-      <option value="Images">🖼️ Images</option>
-      <option value="Videos">🎬 Videos</option>
-      <option value="Audio">🎵 Audio</option>
-      <option value="Archives">📦 Archives</option>
-      <option value="Programs">💻 Programs</option>
-      <option value="ISOs">💿 ISOs</option>
-      <option value="Other">📁 Other</option>
-    </select>
-  </div>
-
-  <!-- Tab 1: Downloads Container -->
-  <main id="tabDownloads" class="tab-content active" role="tabpanel">
-    <div id="downloadsList">
-      <div class="empty-state">
-        <div class="empty-icon">📁</div>
-        <p>No downloads yet.</p>
-        <p style="font-size: 11px; margin-top: 4px;">Paste a link above or right-click any link/media to download with MyDM.</p>
-      </div>
-    </div>
-  </main>
-
-  <!-- Tab 2: Media Sniffer -->
-  <section id="tabSniffer" class="tab-content" role="tabpanel">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <span style="font-size: 12px; color: var(--text-muted);">Media & Streams on Active Tab:</span>
-      <button id="btnScanMedia" class="btn-action btn-secondary" style="padding: 4px 10px; font-size: 11px;">🔄 Scan Page</button>
-    </div>
-    <div id="snifferList">
-      <div class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <p>No media detected yet.</p>
-        <p style="font-size: 11px; margin-top: 4px;">Click "Scan Page" to discover video, audio, and stream playlists.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tab 3: Settings Panel -->
-  <section id="tabSettings" class="tab-content" role="tabpanel">
-    <div class="settings-group">
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">Max Concurrent Downloads</div>
-          <div class="settings-desc">Number of downloads actively streaming simultaneously</div>
-        </div>
-        <input type="number" id="settingMaxConcurrent" class="settings-input" min="1" max="10" value="3" style="width: 55px;" />
-      </div>
-
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">Automatic Categorization</div>
-          <div class="settings-desc">Organize files by type (Videos, Documents, Archives)</div>
-        </div>
-        <input type="checkbox" id="settingAutoCategorize" checked />
-      </div>
-
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">Category Subfolders</div>
-          <div class="settings-desc">Save into MyDM/&lt;Category&gt;/filename</div>
-        </div>
-        <input type="checkbox" id="settingCategoryFolders" checked />
-      </div>
-
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">File Conflict Action</div>
-          <div class="settings-desc">What to do if file already exists in folder</div>
-        </div>
-        <select id="settingConflictAction" class="settings-input">
-          <option value="uniquify">Rename (add number)</option>
-          <option value="overwrite">Overwrite existing</option>
-          <option value="prompt">Prompt location</option>
-        </select>
-      </div>
-
-      <div class="settings-row">
-        <div>
-          <div class="settings-label">Auto-Retry on Network Failure</div>
-          <div class="settings-desc">Max retry attempts with exponential backoff</div>
-        </div>
-        <input type="number" id="settingMaxRetries" class="settings-input" min="0" max="10" value="3" style="width: 55px;" />
-      </div>
-    </div>
-
-    <div style="text-align: right;">
-      <button id="btnSaveSettings" class="btn-action btn-primary">Save Settings</button>
-    </div>
-  </section>
-
-  <!-- Footer -->
+  <!-- Pinned Telemetry Status Footer -->
   <footer class="footer">
-    <span>MyDM v2.0 • Browser-Native Engine</span>
-    <span id="labelLastUpdated">Ready</span>
+    <div class="footer-left">
+      <span class="icon footer-speed">downloading</span>
+      <span id="footerSpeed" class="footer-speed">↓ 0.0 MB/s</span>
+      <span>•</span>
+      <span id="footerThreadsStatus">2 active threads</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span id="labelLastUpdated">Ready</span>
+    </div>
   </footer>
+
+  <!-- Video Quality & Format Picker Modal Sheet -->
+  <div id="formatModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span class="icon" style="color: var(--primary);">movie</span>
+          <span id="modalHeaderTitle">Video Quality & Format Options</span>
+        </div>
+        <button type="button" id="modalBtnClose" class="modal-close-btn" title="Close dialog">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Playlist vs Single Video Mode Switcher -->
+        <div id="modalPlaylistToggle" class="playlist-mode-toggle hidden">
+          <button type="button" id="modalBtnModeSingle" class="mode-toggle-btn active">Single Video</button>
+          <button type="button" id="modalBtnModePlaylist" class="mode-toggle-btn">Full Playlist (<span id="modalPlaylistCount">0</span>)</button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="modalLoading" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 16px; gap: 10px; text-align: center;">
+          <div style="width: 28px; height: 28px; border: 3px solid rgba(56, 189, 248, 0.2); border-top-color: var(--primary-container); border-radius: 50%; animation: spin 0.7s linear infinite;"></div>
+          <div id="modalLoadingText" style="font-size: 12px; font-weight: 600; color: #fff;">Detecting available streams & resolutions...</div>
+          <div id="modalLoadingSub" style="font-size: 10px; color: var(--secondary);">Querying format manifest via MyDM engine</div>
+        </div>
+
+        <!-- Content State -->
+        <div id="modalContent" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Video Preview Card -->
+          <div class="modal-preview-box">
+            <img id="modalThumb" class="modal-thumb" src="" alt="Thumbnail" referrerpolicy="no-referrer" />
+            <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+              <div id="modalVideoTitle" class="modal-video-title">Video Title</div>
+              <div id="modalVideoSub" class="modal-video-sub">Duration: -- • Host: Web</div>
+            </div>
+          </div>
+
+          <!-- Playlist Items Preview -->
+          <div id="modalPlaylistPreviewSection" class="hidden" style="display: flex; flex-direction: column; gap: 5px;">
+            <div class="modal-section-title" id="modalPlaylistPreviewTitle">Playlist Items to Download:</div>
+            <div id="modalPlaylistEntriesList" style="max-height: 110px; overflow-y: auto; background: var(--surface-container-lowest); border: 1px solid var(--glass-border); border-radius: 6px; padding: 6px 8px; font-size: 11px; color: var(--secondary);">
+              <!-- Items populated here -->
+            </div>
+          </div>
+
+          <div class="modal-section-title" id="modalFormatSectionTitle">Select Quality / Format:</div>
+          <div id="formatOptionsList" class="format-options-list">
+            <!-- Format radio items -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="modalBtnCancel" class="btn-ctrl" style="height: 28px; padding: 0 12px;">Cancel</button>
+        <button type="button" id="modalBtnDownload" class="btn-download-primary" style="height: 28px;" disabled>Start Download</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Overlay -->
+  <div id="toastNotification" class="toast-overlay">
+    <span class="icon" style="color: var(--tertiary);">check_circle</span>
+    <span id="toastMessage">Action completed</span>
+  </div>
+
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin {
+      animation: spin 0.8s linear infinite;
+    }
+  </style>
 
   <script src="engine/speed_tracker.js"></script>
   <script src="popup.js"></script>
 </body>
+
 </html>

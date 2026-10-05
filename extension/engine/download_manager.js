@@ -301,6 +301,8 @@
     }
 
     _handleBrowserCreated(item) {
+      if (!item || !item.url) return;
+
       // Check if this item is tracked by MyDM
       let record = this.store.getByBrowserId(item.id);
       if (!record && item.url) {
@@ -310,6 +312,36 @@
             browserDownloadId: item.id,
             totalBytes: item.totalBytes || record.totalBytes,
             downloadedBytes: item.bytesReceived || 0
+          });
+          return;
+        }
+      }
+
+      // Auto-capture downloads initiated directly through browser
+      if (!record && (item.url.startsWith('http://') || item.url.startsWith('https://'))) {
+        const autoCapture = this.store.settings && this.store.settings.autoCaptureBrowserDownloads !== false;
+        if (autoCapture) {
+          const rawName = item.filename ? item.filename.split(/[/\\]/).pop() : '';
+          const resolvedFilename = FilenameUtil.resolveFilename(rawName, item.url);
+          const category = RulesEngine.getCategoryForFile(resolvedFilename);
+          const relativePath = RulesEngine.getRelativeDownloadPath(
+            resolvedFilename,
+            category,
+            this.store.settings && this.store.settings.categoryFolders !== false
+          );
+
+          record = this.store.createRecord({
+            url: item.url,
+            referer: item.referrer || '',
+            filename: resolvedFilename,
+            category: category,
+            relativePath: relativePath,
+            status: item.state === 'complete' ? STATES.COMPLETED : STATES.DOWNLOADING,
+            engine: 'browser',
+            browserDownloadId: item.id,
+            totalBytes: item.totalBytes > 0 ? item.totalBytes : 0,
+            downloadedBytes: item.bytesReceived || 0,
+            startedAt: item.startTime ? new Date(item.startTime).getTime() : Date.now()
           });
         }
       }
@@ -325,6 +357,7 @@
         const cleanName = FilenameUtil.sanitizeFilename(delta.filename.current.split(/[/\\]/).pop());
         updates.filename = cleanName;
         updates.relativePath = delta.filename.current;
+        updates.category = RulesEngine.getCategoryForFile(cleanName);
       }
 
       if (delta.totalBytes && typeof delta.totalBytes.current === 'number') {
