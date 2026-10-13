@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyDM - Cyber Telemetry Download Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  <link rel="stylesheet" href="desktop.css">
+</head>
+
+<body>
+  <!-- App Container -->
+  <div class="app-layout">
+
+    <!-- Left Sidebar Rail -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="logo-box">
+            <span class="icon" style="color: var(--primary); font-size: 20px;">download</span>
+          </div>
+          <div class="brand-meta">
+            <div class="brand-title-row">
+              <span class="brand-title">MyDM</span>
+              <span class="version-badge">v2.4 Pro</span>
+            </div>
+            <div class="engine-status-row">
+              <span class="pulse-dot"></span>
+              <span class="engine-status-text">Engine Active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="all">
+          <span class="icon">format_list_bulleted</span>
+          <span>All Downloads</span>
+          <span class="nav-counter" id="navCountAll">0</span>
+        </button>
+        <button class="nav-item" data-tab="active">
+          <span class="icon">downloading</span>
+          <span>Active Tasks</span>
+          <span class="nav-counter active" id="navCountActive" style="display: none;">0</span>
+        </button>
+        <button class="nav-item" data-tab="completed">
+          <span class="icon">check_circle</span>
+          <span>Completed</span>
+          <span class="nav-counter" id="navCountCompleted">0</span>
+        </button>
+        <button class="nav-item" data-tab="streams">
+          <span class="icon">smart_display</span>
+          <span>Video Streams</span>
+          <span class="nav-counter" id="navCountStreams">0</span>
+        </button>
+        <div class="nav-divider"></div>
+        <button class="nav-item" data-tab="settings">
+          <span class="icon">tune</span>
+          <span>Engine Settings</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer Telemetry -->
+      <div class="sidebar-footer">
+        <div class="storage-card">
+          <div class="storage-title-row">
+            <span style="font-size: 10px; color: var(--secondary);">STORAGE PATH</span>
+            <span style="font-size: 9.5px; color: var(--tertiary); font-weight: 700;">Drive Ready</span>
+          </div>
+          <div class="storage-path-text" id="sidebarStoragePath">~/Downloads/MyDM</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+
+      <!-- Top Toolbar Header -->
+      <header class="topbar">
+        <!-- New Download URL Box -->
+        <div class="url-input-card">
+          <div class="url-input-wrap">
+            <span class="icon url-icon">link</span>
+            <input type="text" id="desktopInputUrl" class="url-input" placeholder="Paste download URL (http://, https://, magnet:)..." autocomplete="off" />
+          </div>
+          <button type="button" id="btnDesktopPaste" class="btn-tool" title="Paste link from clipboard">
+            <span class="icon" style="font-size: 15px;">content_paste</span>
+            <span>Paste</span>
+          </button>
+          <button type="button" id="btnDesktopStart" class="btn-download-primary">
+            <span class="icon" style="font-size: 16px;">download</span>
+            <span>Download</span>
+          </button>
+        </div>
+
+        <!-- Top Right Action Suite -->
+        <div class="topbar-actions">
+          <button type="button" id="btnDesktopClearDone" class="btn-tool" title="Clear completed tasks">Clear Done</button>
+          <button type="button" id="btnDesktopClearAll" class="btn-tool" title="Clear all tasks">Clear All</button>
+          <button type="button" id="btnDesktopRefresh" class="btn-icon" title="Refresh state">
+            <span class="icon">refresh</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Search & Category Filters Bar -->
+      <div class="toolbar-sub">
+        <div class="search-box">
+          <span class="icon search-icon">search</span>
+          <input type="text" id="desktopSearchInput" class="search-input" placeholder="Search downloads by filename or URL..." />
+        </div>
+        <div class="category-select-wrap">
+          <select id="desktopCategorySelect" class="category-select">
+            <option value="ALL">All Categories</option>
+            <option value="Videos">Videos</option>
+            <option value="Audio">Audio</option>
+            <option value="Documents">Documents</option>
+            <option value="Archives">Archives (.iso, .zip)</option>
+            <option value="Programs">Software (.pkg, .exe)</option>
+            <option value="Images">Images</option>
+            <option value="Other">Other</option>
+          </select>
+          <span class="icon chevron-icon">expand_more</span>
+        </div>
+      </div>
+
+      <!-- Live Bandwidth & Chunks Telemetry Ribbon -->
+      <div class="telemetry-bar">
+        <div class="telemetry-left">
+          <span class="telemetry-ping"></span>
+          <span>QUEUE TELEMETRY</span>
+        </div>
+        <div class="telemetry-right">
+          <span class="telemetry-stat">
+            <span class="icon" style="color: var(--tertiary); font-size: 14px;">speed</span>
+            <span id="telemetrySpeed">Peak 0.0 MB/s</span>
+          </span>
+          <span>•</span>
+          <span id="telemetryActiveChunks">Active Chunks: 0</span>
+          <span>•</span>
+          <span id="telemetryActiveSlots">Slots: 0 / 5</span>
+        </div>
+      </div>
+
+      <!-- Scrollable Tab Views Viewport -->
+      <div class="viewport">
+
+        <!-- TAB 1: Downloads Container (All, Active, Completed, Streams) -->
+        <div id="tabViewDownloads" class="tab-view active">
+          <div id="desktopDownloadsList" class="downloads-container">
+            <!-- Download cards dynamically rendered here -->
+          </div>
+        </div>
+
+        <!-- TAB 2: Engine Settings & Preferences -->
+        <div id="tabViewSettings" class="tab-view">
+          <div class="settings-container">
+            <!-- Group 1: General & Storage -->
+            <section class="settings-group">
+              <div class="settings-group-header">
+                <div class="settings-group-title">
+                  <span class="icon" style="color: var(--primary);">folder_special</span>
+                  <span>General & Storage</span>
+                </div>
+                <span class="file-ext-tag">STORAGE</span>
+              </div>
+
+              <div class="storage-config-card">
+                <div style="display: flex; flex-direction: column; min-width: 0;">
+                  <span style="font-size: 10px; color: var(--secondary); font-weight: 600;">Download Directory</span>
+                  <span style="font-size: 12px; color: #fff; font-family: monospace;" id="settingDisplayDir">~/Downloads/MyDM</span>
+                </div>
+                <button type="button" id="btnChangeDir" class="btn-tool" style="font-size: 11px;">
+                  <span class="icon" style="font-size: 14px;">drive_file_move</span>
+                  <span>Change Directory</span>
+                </button>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-wrap">
+                  <span class="settings-label">Automatic Categorization</span>
+                  <span class="settings-desc">Organize downloads into Videos, Audio, Documents, Archives</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="desktopSettingAutoCategorize" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-wrap">
+                  <span class="settings-label">Category Subfolders</span>
+                  <span class="settings-desc">Save into MyDM/&lt;Category&gt;/filename</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="desktopSettingCategoryFolders" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </section>
+
+            <!-- Group 2: Engine & Multi-Threading -->
+            <section class="settings-group">
+              <div class="settings-group-header">
+                <div class="settings-group-title">
+                  <span class="icon" style="color: var(--primary);">memory</span>
+                  <span>Engine & Multi-Threading</span>
+                </div>
+                <span class="file-ext-tag">v2.4 CORE</span>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-wrap">
+                  <span class="settings-label">Concurrent Task Slots</span>
+                  <span class="settings-desc">Max downloads executing simultaneously</span>
+                </div>
+                <div class="segmented-control" id="desktopControlConcurrentSlots">
+                  <button type="button" class="segmented-btn" data-val="3">3 slots</button>
+                  <button type="button" class="segmented-btn active" data-val="5">5 slots</button>
+                  <button type="button" class="segmented-btn" data-val="8">8 slots</button>
+                </div>
+                <input type="hidden" id="desktopSettingMaxConcurrent" value="5" />
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-wrap">
+                  <span class="settings-label">Default Thread Slices</span>
+                  <span class="settings-desc">Parallel connections per download payload</span>
+                </div>
+                <div class="segmented-control" id="desktopControlThreads">
+                  <button type="button" class="segmented-btn" data-val="4">4 slices</button>
+                  <button type="button" class="segmented-btn active" data-val="8">8 slices</button>
+                  <button type="button" class="segmented-btn" data-val="16">16 slices</button>
+                </div>
+                <input type="hidden" id="desktopSettingDefaultThreads" value="8" />
+              </div>
+            </section>
+
+            <!-- Group 3: Audio & Notifications -->
+            <section class="settings-group">
+              <div class="settings-group-header">
+                <div class="settings-group-title">
+                  <span class="icon" style="color: var(--primary);">notifications_active</span>
+                  <span>Feedback & Audio Cues</span>
+                </div>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-wrap">
+                  <span class="settings-label">Completion Sound Alert</span>
+                  <span class="settings-desc">Futuristic synthesized audio chime on finish</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="desktopSettingCompletionSound" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="settings-row">
+                <div class="settings-label-wrap">
+                  <span class="settings-label">Native System Notification</span>
+                  <span class="settings-desc">OS notification banner when download completes</span>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="desktopSettingSystemNotify" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </section>
+
+            <!-- Settings Action Buttons -->
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <button type="button" id="btnDesktopSaveSettings" class="btn-download-primary" style="flex: 1; height: 36px;">
+                <span class="icon" style="font-size: 16px;">save</span>
+                <span>Apply & Save Preferences</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pinned Bottom Status Bar -->
+      <footer class="bottom-bar">
+        <div class="bottom-left">
+          <span class="icon" style="color: var(--primary); font-size: 14px;">downloading</span>
+          <span id="footerSpeed" style="color: var(--primary); font-weight: 700;">↓ 0.0 MB/s</span>
+          <span>•</span>
+          <span id="footerThreadsStatus">0 active threads</span>
+        </div>
+        <div class="bottom-right">
+          <span id="labelLastUpdated">Ready</span>
+        </div>
+      </footer>
+
+    </div>
+
+  </div>
+
+  <!-- Format / Quality Modal Dialog -->
+  <div id="desktopFormatModal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span class="icon" style="color: var(--primary);">movie</span>
+          <span id="modalHeaderTitle">Video Quality & Format Options</span>
+        </div>
+        <button type="button" id="modalBtnClose" class="modal-close-btn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Loading State -->
+        <div id="modalLoading" class="modal-loading-box">
+          <div class="spinner"></div>
+          <div style="font-size: 12.5px; font-weight: 600; color: #fff;">Detecting available streams & resolutions...</div>
+          <div style="font-size: 11px; color: var(--secondary);">Querying format manifest via yt-dlp</div>
+        </div>
+
+        <!-- Content State -->
+        <div id="modalContent" class="hidden" style="display: flex; flex-direction: column; gap: 12px;">
+          <div class="modal-preview-box">
+            <img id="modalThumb" class="modal-thumb" src="" alt="Thumbnail" />
+            <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+              <div id="modalVideoTitle" class="modal-video-title">Video Title</div>
+              <div id="modalVideoSub" class="modal-video-sub">Duration: --</div>
+            </div>
+          </div>
+
+          <div class="modal-section-title">Select Quality / Format:</div>
+          <div id="modalFormatList" class="format-options-list">
+            <!-- Format radio options -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="modalBtnCancel" class="btn-tool">Cancel</button>
+        <button type="button" id="modalBtnConfirm" class="btn-download-primary" disabled>Start Download</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Overlay -->
+  <div id="toastNotification" class="toast-overlay">
+    <span class="icon" style="color: var(--tertiary);">check_circle</span>
+    <span id="toastMessage">Action completed</span>
+  </div>
+
+  <script src="desktop.js"></script>
+</body>
+
+</html>
